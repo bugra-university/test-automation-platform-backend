@@ -1,0 +1,13 @@
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="TestSuite">
+  <listeners>
+    <listener class-name="project_team09.utilities.DatabaseReporter"/>
+  </listeners>
+  
+  <!-- Docker ortamında çalıştırılacak test -->
+  <test name="us02">
+    <packages>
+      <package name="project_team09.tests.us02"/>
+    </packages>
+  </test>
+</suite>
