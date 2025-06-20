@@ -11,12 +11,15 @@ CREATE TABLE projects (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    owner_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Projeler için indeks oluşturma
 CREATE INDEX idx_project_name ON projects (name);
+CREATE INDEX idx_project_owner_id ON projects (owner_id);
 
 -- Proje Excel Dosyaları tablosu - Excel dosyalarını projelerle ilişkilendirmek için
 CREATE TABLE project_excel_files (
@@ -62,6 +65,6 @@ CREATE INDEX idx_sheet_excel_file_id ON excel_sheets (excel_file_id);
 CREATE INDEX idx_sheet_name ON excel_sheets (sheet_name);
 CREATE INDEX idx_sheet_type ON excel_sheets (sheet_type);
 
--- Varsayılan proje oluşturma
-INSERT INTO projects (name, description, created_at, updated_at)
-VALUES ('Default Project', 'Otomatik olarak oluşturulan varsayılan proje', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+-- Varsayılan proje oluşturma (owner_id = 1 varsayılan admin kullanıcısı)
+INSERT INTO projects (name, description, owner_id, created_at, updated_at)
+VALUES ('Default Project', 'Otomatik olarak oluşturulan varsayılan proje', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
