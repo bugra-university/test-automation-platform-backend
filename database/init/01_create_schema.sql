@@ -12,6 +12,7 @@ CREATE TABLE projects (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     owner_id BIGINT NOT NULL,
+    owner_username VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
