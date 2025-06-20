@@ -19,6 +19,7 @@
         <java.version>11</java.version>
         <testng.version>7.7.1</testng.version>
         <selenium.version>4.8.3</selenium.version>
+        <start-class>com.project_team09.Application</start-class>
     </properties>
     
     <dependencies>
