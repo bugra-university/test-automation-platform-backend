@@ -66,6 +66,6 @@ CREATE INDEX idx_sheet_excel_file_id ON excel_sheets (excel_file_id);
 CREATE INDEX idx_sheet_name ON excel_sheets (sheet_name);
 CREATE INDEX idx_sheet_type ON excel_sheets (sheet_type);
 
--- Varsayılan proje oluşturma (owner_id = 1 varsayılan admin kullanıcısı)
+-- Create default project (owner_id = 1 is the default admin user)
 INSERT INTO projects (name, description, owner_id, created_at, updated_at)
-VALUES ('Default Project', 'Otomatik olarak oluşturulan varsayılan proje', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+VALUES ('Default Project', 'Automatically created default project', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);

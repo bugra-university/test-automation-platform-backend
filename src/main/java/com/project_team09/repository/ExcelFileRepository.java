@@ -8,9 +8,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Repository
 public interface ExcelFileRepository extends JpaRepository<ExcelFile, Long> {
     // Temel CRUD işlemleri JpaRepository tarafından sağlanıyor
+    
+    @Query(value = "SELECT * FROM project_excel_files WHERE project_id = :projectId", nativeQuery = true)
+    List<ExcelFile> findByProjectId(@Param("projectId") Long projectId);
     
     @Modifying
     @Transactional

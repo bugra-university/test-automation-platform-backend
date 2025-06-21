@@ -76,8 +76,75 @@ public class ProjectsController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteProject(@PathVariable Long id) {
+        try {
+            boolean deleted = projectService.deleteProject(id);
+            Map<String, Object> response = new HashMap<>();
+            if (deleted) {
+                response.put("success", true);
+                response.put("message", "Project deleted successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("message", "Project not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to delete project: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    @PostMapping("/{id}/update")
+    public ResponseEntity<Map<String, Object>> updateProject(@PathVariable Long id, @RequestBody UpdateProjectRequest request) {
+        try {
+            Project project = projectService.updateProject(id, request.getName(), request.getDescription());
+            Map<String, Object> response = new HashMap<>();
+            if (project != null) {
+                response.put("success", true);
+                response.put("project", project);
+                response.put("message", "Project updated successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("message", "Project not found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to update project: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
     // DTO class for create project request
     public static class CreateProjectRequest {
+        private String name;
+        private String description;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+    }
+
+    // DTO class for update project request
+    public static class UpdateProjectRequest {
         private String name;
         private String description;
 

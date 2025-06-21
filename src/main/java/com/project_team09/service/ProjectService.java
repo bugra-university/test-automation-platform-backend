@@ -2,11 +2,14 @@ package com.project_team09.service;
 
 import com.project_team09.model.Project;
 import com.project_team09.model.User;
+import com.project_team09.model.ExcelFile;
 import com.project_team09.repository.ProjectRepository;
 import com.project_team09.repository.UserRepository;
+import com.project_team09.repository.ExcelFileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,11 +18,13 @@ public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final ExcelFileRepository excelFileRepository;
 
     @Autowired
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository) {
+    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, ExcelFileRepository excelFileRepository) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
+        this.excelFileRepository = excelFileRepository;
     }
 
     public List<Project> getAllProjects() {
@@ -67,9 +72,37 @@ public class ProjectService {
 
     public boolean deleteProject(Long id) {
         if (projectRepository.existsById(id)) {
+            // First, delete physical Excel files
+            deletePhysicalExcelFiles(id);
+            
+            // Then delete the project (CASCADE DELETE will handle related data)
             projectRepository.deleteById(id);
             return true;
         }
         return false;
+    }
+
+    private void deletePhysicalExcelFiles(Long projectId) {
+        try {
+            // Get all Excel files for this project
+            List<ExcelFile> excelFiles = excelFileRepository.findByProjectId(projectId);
+            
+            for (ExcelFile excelFile : excelFiles) {
+                String filePath = excelFile.getFilePath();
+                if (filePath != null && !filePath.isEmpty()) {
+                    File file = new File(filePath);
+                    if (file.exists()) {
+                        if (file.delete()) {
+                            System.out.println("Successfully deleted file: " + filePath);
+                        } else {
+                            System.err.println("Failed to delete file: " + filePath);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error deleting physical Excel files for project " + projectId + ": " + e.getMessage());
+            // Don't throw exception here as we still want to delete the project from database
+        }
     }
 }
