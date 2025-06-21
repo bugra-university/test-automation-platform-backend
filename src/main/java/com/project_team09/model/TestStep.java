@@ -2,6 +2,7 @@ package com.project_team09.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "test_steps")
@@ -17,16 +18,39 @@ public class TestStep {
     private TestCase testCase;
 
     @Column(name = "step_number", nullable = false)
-    private int stepNumber;
+    private Integer stepNumber;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "step_description", nullable = false, columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "test_data", columnDefinition = "TEXT")
+    private String testData;
 
     @Column(name = "expected_result", columnDefinition = "TEXT")
     private String expectedResult;
 
-    // Getters and Setters
+    @Column(name = "actual_result", columnDefinition = "TEXT")
+    private String actualResult;
 
+    @Column(name = "is_home")
+    private Boolean isHome = false;
+
+    @Column(name = "url", columnDefinition = "TEXT")
+    private String url;
+
+    @Column(name = "screenshot_path", columnDefinition = "TEXT")
+    private String screenshotPath;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "row_index")
+    private Integer rowIndex;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -43,11 +67,11 @@ public class TestStep {
         this.testCase = testCase;
     }
 
-    public int getStepNumber() {
+    public Integer getStepNumber() {
         return stepNumber;
     }
 
-    public void setStepNumber(int stepNumber) {
+    public void setStepNumber(Integer stepNumber) {
         this.stepNumber = stepNumber;
     }
 
@@ -59,11 +83,75 @@ public class TestStep {
         this.description = description;
     }
 
+    public String getTestData() {
+        return testData;
+    }
+
+    public void setTestData(String testData) {
+        this.testData = testData;
+    }
+
     public String getExpectedResult() {
         return expectedResult;
     }
 
     public void setExpectedResult(String expectedResult) {
         this.expectedResult = expectedResult;
+    }
+
+    public String getActualResult() {
+        return actualResult;
+    }
+
+    public void setActualResult(String actualResult) {
+        this.actualResult = actualResult;
+    }
+
+    public Boolean getIsHome() {
+        return isHome;
+    }
+
+    public void setIsHome(Boolean isHome) {
+        this.isHome = isHome;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getScreenshotPath() {
+        return screenshotPath;
+    }
+
+    public void setScreenshotPath(String screenshotPath) {
+        this.screenshotPath = screenshotPath;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getRowIndex() {
+        return rowIndex;
+    }
+
+    public void setRowIndex(Integer rowIndex) {
+        this.rowIndex = rowIndex;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 } 

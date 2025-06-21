@@ -1,5 +1,7 @@
 package com.project_team09.controller;
 
+import com.project_team09.model.Project;
+import com.project_team09.repository.ProjectRepository;
 import com.project_team09.service.ExcelParsingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,9 @@ public class ExcelProcessingController {
 
     @Autowired
     private ExcelParsingService excelParsingService;
+    
+    @Autowired
+    private ProjectRepository projectRepository;
 
     @PostMapping("/projects/{projectId}/upload-and-parse")
     public ResponseEntity<Map<String, Object>> uploadAndParseExcel(
@@ -32,9 +37,15 @@ public class ExcelProcessingController {
         }
 
         try {
-            excelParsingService.parseAndSaveExcel(file, projectId);
+            // Find project
+            Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+            
+            // Parse Excel file
+            String result = excelParsingService.parseExcelFile(file, project);
+            
             response.put("success", true);
-            response.put("message", "File uploaded and data saved successfully.");
+            response.put("message", result);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("success", false);

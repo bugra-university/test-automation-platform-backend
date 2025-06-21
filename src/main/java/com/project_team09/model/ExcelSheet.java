@@ -20,10 +20,25 @@ public class ExcelSheet {
     private String sheetName;
 
     @Column(name = "sheet_type", nullable = false)
-    private String sheetType; // BACKLOG or TEST_CASES
+    private String sheetType;
+
+    @Column(name = "sheet_index")
+    private Integer sheetIndex;
+
+    @Column(name = "row_count")
+    private Integer rowCount = 0;
+
+    @Column(name = "column_count")
+    private Integer columnCount = 0;
+
+    @Column(name = "parsed")
+    private Boolean parsed = false;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     @OneToMany(mappedBy = "excelSheet", cascade = CascadeType.ALL)
     private List<ProductBacklogItem> backlogItems = new ArrayList<>();
@@ -64,12 +79,52 @@ public class ExcelSheet {
         this.sheetType = sheetType;
     }
 
+    public Integer getSheetIndex() {
+        return sheetIndex;
+    }
+
+    public void setSheetIndex(Integer sheetIndex) {
+        this.sheetIndex = sheetIndex;
+    }
+
+    public Integer getRowCount() {
+        return rowCount;
+    }
+
+    public void setRowCount(Integer rowCount) {
+        this.rowCount = rowCount;
+    }
+
+    public Integer getColumnCount() {
+        return columnCount;
+    }
+
+    public void setColumnCount(Integer columnCount) {
+        this.columnCount = columnCount;
+    }
+
+    public Boolean getParsed() {
+        return parsed;
+    }
+
+    public void setParsed(Boolean parsed) {
+        this.parsed = parsed;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public List<ProductBacklogItem> getBacklogItems() {
