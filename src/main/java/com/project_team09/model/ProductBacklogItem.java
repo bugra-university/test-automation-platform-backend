@@ -15,6 +15,10 @@ public class ProductBacklogItem {
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
+    @ManyToOne
+    @JoinColumn(name = "excel_sheet_id", nullable = false)
+    private ExcelSheet excelSheet;
+
     @Column(name = "user_story_id", nullable = false, length = 50)
     private String userStoryId;
 
@@ -29,6 +33,9 @@ public class ProductBacklogItem {
 
     @Column(length = 50)
     private String validation;
+
+    @Column(name = "row_index")
+    private Integer rowIndex;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -62,6 +69,14 @@ public class ProductBacklogItem {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public ExcelSheet getExcelSheet() {
+        return excelSheet;
+    }
+
+    public void setExcelSheet(ExcelSheet excelSheet) {
+        this.excelSheet = excelSheet;
     }
 
     public String getUserStoryId() {
@@ -102,6 +117,14 @@ public class ProductBacklogItem {
 
     public void setValidation(String validation) {
         this.validation = validation;
+    }
+
+    public Integer getRowIndex() {
+        return rowIndex;
+    }
+
+    public void setRowIndex(Integer rowIndex) {
+        this.rowIndex = rowIndex;
     }
 
     public LocalDateTime getCreatedAt() {

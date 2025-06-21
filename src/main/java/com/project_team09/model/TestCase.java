@@ -17,24 +17,31 @@ public class TestCase {
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
+    @ManyToOne
+    @JoinColumn(name = "excel_sheet_id", nullable = false)
+    private ExcelSheet excelSheet;
+
     @Column(name = "user_story_id", length = 50)
     private String userStoryId;
 
     @Column(name = "test_case_id", nullable = false, length = 50)
     private String testCaseId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "test_objective")
     private String objective;
 
-    @Column(name = "pre_condition", columnDefinition = "TEXT")
+    @Column(name = "pre_condition")
     private String preCondition;
 
-    @Column(name = "test_data", columnDefinition = "TEXT")
+    @Column(name = "test_data")
     private String testData;
 
-    @Column(name = "expected_result", columnDefinition = "TEXT")
+    @Column(name = "expected_result")
     private String expectedResult;
-    
+
+    @Column(name = "row_index")
+    private Integer rowIndex;
+
     @OneToMany(
         cascade = CascadeType.ALL,
         orphanRemoval = true,
@@ -80,6 +87,14 @@ public class TestCase {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public ExcelSheet getExcelSheet() {
+        return excelSheet;
+    }
+
+    public void setExcelSheet(ExcelSheet excelSheet) {
+        this.excelSheet = excelSheet;
     }
 
     public String getUserStoryId() {
@@ -128,6 +143,14 @@ public class TestCase {
 
     public void setExpectedResult(String expectedResult) {
         this.expectedResult = expectedResult;
+    }
+
+    public Integer getRowIndex() {
+        return rowIndex;
+    }
+
+    public void setRowIndex(Integer rowIndex) {
+        this.rowIndex = rowIndex;
     }
 
     public List<TestStep> getTestSteps() {
