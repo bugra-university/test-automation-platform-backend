@@ -24,12 +24,14 @@ public class UserPrincipal implements UserDetails {
     }
 
     public static UserPrincipal create(User user) {
+        Collection<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(() -> "ROLE_USER");
         return new UserPrincipal(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
-                new ArrayList<>());
+                authorities);
     }
 
     public Long getId() {

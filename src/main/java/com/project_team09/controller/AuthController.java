@@ -1,17 +1,9 @@
 package com.project_team09.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
 import com.project_team09.model.User;
 import com.project_team09.repository.UserRepository;
-import com.project_team09.security.JwtUtils;
-
 import java.util.Map;
 import java.util.HashMap;
 
@@ -20,61 +12,49 @@ import java.util.HashMap;
 @CrossOrigin(origins = "http://localhost:3000")
 public class AuthController {
 
-    private static final String MESSAGE_KEY = "message";
-
-    private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
-    private final PasswordEncoder encoder;
-    private final JwtUtils jwtUtils;
 
-    public AuthController(AuthenticationManager authenticationManager,
-            UserRepository userRepository,
-            PasswordEncoder encoder,
-            JwtUtils jwtUtils) {
-        this.authenticationManager = authenticationManager;
+    public AuthController(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.encoder = encoder;
-        this.jwtUtils = jwtUtils;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtUtils.generateJwtToken(authentication);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", jwt);
-        response.put("type", "Bearer");
-        response.put("username", loginRequest.getUsername());
-
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest loginRequest) {
+        User user = userRepository.findByUsername(loginRequest.getUsername());
+        
+        if (user != null && loginRequest.getPassword().equals(user.getPassword())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("username", user.getUsername());
+            response.put("message", "Login successful");
+            return ResponseEntity.ok(response);
+        }
+        
+        return ResponseEntity.badRequest()
+                .body(Map.of("message", "Invalid username or password"));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> registerUser(@RequestBody SignupRequest signUpRequest) {
+    public ResponseEntity<Map<String, String>> register(@RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
             return ResponseEntity.badRequest()
-                    .body(Map.of(MESSAGE_KEY, "Username is already taken!"));
+                    .body(Map.of("message", "Username is already taken!"));
         }
 
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
             return ResponseEntity.badRequest()
-                    .body(Map.of(MESSAGE_KEY, "Email is already in use!"));
+                    .body(Map.of("message", "Email is already in use!"));
         }
 
         User user = new User(signUpRequest.getUsername(),
                 signUpRequest.getEmail(),
-                encoder.encode(signUpRequest.getPassword()));
+                signUpRequest.getPassword());  // Store password as plain text for simplicity
 
         user.setFirstName(signUpRequest.getFirstName());
         user.setLastName(signUpRequest.getLastName());
 
         userRepository.save(user);
 
-        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "User registered successfully!"));
+        return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
     }
 
     public static class LoginRequest {

@@ -15,7 +15,8 @@
     <artifactId>project_team09</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Project Team 09 Test Automation Platform</name>
-    <description>Test Automation Platform with Web Interface and API</description>    <properties>
+    <description>Test Automation Platform with Web Interface and API</description>
+    <properties>
         <java.version>11</java.version>
         <testng.version>7.7.1</testng.version>
         <selenium.version>4.8.3</selenium.version>
@@ -48,7 +49,8 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>        <!-- JWT Support -->
+        </dependency>
+        <!-- JWT Support -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
@@ -65,7 +67,9 @@
             <artifactId>jjwt-jackson</artifactId>
             <version>0.11.5</version>
             <scope>runtime</scope>
-        </dependency><!-- Utilities -->        <dependency>
+        </dependency>
+        <!-- Utilities -->
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.30</version>
@@ -93,7 +97,8 @@
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>7.7.1</version>
-        </dependency>        <!-- Selenium & WebDriver -->
+        </dependency>
+        <!-- Selenium & WebDriver -->
         <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
@@ -140,7 +145,8 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
-        </dependency>        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api -->
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
@@ -153,7 +159,8 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.17.2</version>
-        </dependency>        <!-- Database -->
+        </dependency>
+        <!-- Database -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
