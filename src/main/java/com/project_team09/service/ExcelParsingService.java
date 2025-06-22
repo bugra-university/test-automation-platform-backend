@@ -65,7 +65,7 @@ public class ExcelParsingService {
         }
     }
 
-    private void cleanExistingProjectData(Project project) {
+    public void cleanExistingProjectData(Project project) {
         logger.info("Cleaning existing data for project: {}", project.getName());
         
         // Delete in correct order to respect foreign key constraints
@@ -105,6 +105,7 @@ public class ExcelParsingService {
         ExcelFile excelFile = new ExcelFile();
         excelFile.setProject(project);
         excelFile.setFileName(file.getOriginalFilename());
+        excelFile.setOriginalFileName(file.getOriginalFilename());
         excelFile.setFilePath(filePath);
         excelFile.setFileSize(file.getSize());
         excelFile.setUploadDate(LocalDateTime.now());

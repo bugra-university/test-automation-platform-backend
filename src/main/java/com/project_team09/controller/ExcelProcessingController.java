@@ -19,13 +19,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api")
 @CrossOrigin(origins = "http://localhost:3000")
 public class ExcelProcessingController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ExcelProcessingController.class);
 
     @Autowired
     private ExcelParsingService excelParsingService;
@@ -111,6 +117,54 @@ public class ExcelProcessingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @DeleteMapping("/projects/{projectId}/excel")
+    public ResponseEntity<Map<String, Object>> deleteProjectExcel(@PathVariable Long projectId) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Verify project exists
+            Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+            
+            // Get Excel files for this project
+            List<ExcelFile> excelFiles = excelFileRepository.findByProjectId(projectId);
+            
+            if (excelFiles.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "No Excel file found for this project");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            // Delete physical files first
+            for (ExcelFile excelFile : excelFiles) {
+                try {
+                    Path filePath = Paths.get(excelFile.getFilePath());
+                    if (Files.exists(filePath)) {
+                        Files.delete(filePath);
+                        logger.info("Deleted physical file: {}", filePath);
+                    }
+                } catch (IOException e) {
+                    logger.warn("Could not delete physical file: {}", excelFile.getFilePath(), e);
+                }
+            }
+
+            // Clean existing data for this project (cascade delete)
+            excelParsingService.cleanExistingProjectData(project);
+            
+            response.put("success", true);
+            response.put("message", "Excel file and all related data deleted successfully");
+            response.put("deletedFilesCount", excelFiles.size());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Failed to delete Excel file: " + e.getMessage());
+            logger.error("Error deleting Excel file for project: {}", projectId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 } 
