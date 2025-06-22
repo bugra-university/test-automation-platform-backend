@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class ProjectService {
@@ -104,5 +106,40 @@ public class ProjectService {
             System.err.println("Error deleting physical Excel files for project " + projectId + ": " + e.getMessage());
             // Don't throw exception here as we still want to delete the project from database
         }
+    }
+
+    public Map<String, Object> getProjectDatabaseActivity(Long projectId) {
+        Map<String, Object> activity = new HashMap<>();
+        
+        try {
+            // Get project info
+            Optional<Project> projectOpt = projectRepository.findById(projectId);
+            if (!projectOpt.isPresent()) {
+                activity.put("error", "Project not found");
+                return activity;
+            }
+            
+            Project project = projectOpt.get();
+            activity.put("projectCreatedAt", project.getCreatedAt());
+            activity.put("projectUpdatedAt", project.getUpdatedAt());
+            
+            // Get Excel file info
+            List<ExcelFile> excelFiles = excelFileRepository.findByProjectId(projectId);
+            if (!excelFiles.isEmpty()) {
+                ExcelFile latestExcel = excelFiles.get(0); // Get the first (should be latest)
+                activity.put("lastExcelParseDate", latestExcel.getUploadDate());
+                activity.put("excelLastModified", latestExcel.getLastModified());
+                activity.put("hasExcelFile", true);
+            } else {
+                activity.put("lastExcelParseDate", null);
+                activity.put("excelLastModified", null);
+                activity.put("hasExcelFile", false);
+            }
+            
+        } catch (Exception e) {
+            activity.put("error", "Failed to fetch database activity: " + e.getMessage());
+        }
+        
+        return activity;
     }
 }

@@ -121,6 +121,22 @@ public class ProjectsController {
         }
     }
 
+    @GetMapping("/{id}/database-activity")
+    public ResponseEntity<Map<String, Object>> getProjectDatabaseActivity(@PathVariable Long id) {
+        try {
+            Map<String, Object> activity = projectService.getProjectDatabaseActivity(id);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("activity", activity);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fetch project database activity: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
     // DTO class for create project request
     public static class CreateProjectRequest {
         private String name;
