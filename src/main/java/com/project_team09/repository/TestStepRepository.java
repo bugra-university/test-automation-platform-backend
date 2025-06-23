@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Repository
 public interface TestStepRepository extends JpaRepository<TestStep, Long> {
     
@@ -15,4 +17,8 @@ public interface TestStepRepository extends JpaRepository<TestStep, Long> {
     @Transactional
     @Query(value = "DELETE FROM test_steps WHERE test_case_id IN (SELECT id FROM test_cases WHERE project_id = :projectId)", nativeQuery = true)
     void deleteByProjectId(@Param("projectId") Long projectId);
+    
+    List<TestStep> findByTestCaseIdOrderByStepNumber(Long testCaseId);
+    
+    int countByTestCaseId(Long testCaseId);
 } 
