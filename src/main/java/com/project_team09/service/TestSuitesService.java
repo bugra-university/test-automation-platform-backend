@@ -59,8 +59,9 @@ public class TestSuitesService {
             Map<String, Object> statusAndProgress = calculateStatusAndProgress(userStoryTestCases);
             testSuite.putAll(statusAndProgress);
             
-            // Convert test cases to map format
+            // Convert test cases to map format and sort by test case ID
             List<Map<String, Object>> testCaseMaps = userStoryTestCases.stream()
+                .sorted((tc1, tc2) -> tc1.getTestCaseId().compareTo(tc2.getTestCaseId()))
                 .map(this::convertTestCaseToMap)
                 .collect(Collectors.toList());
             
@@ -177,10 +178,10 @@ public class TestSuitesService {
             .filter(tc -> tc.getObjective() != null && !tc.getObjective().trim().isEmpty())
             .count();
 
-        result.put("status", completedTestCases == totalTestCases ? "passed" : "pending");
-        result.put("progress", Map.of("completed", completedTestCases, "total", totalTestCases));
-        result.put("lastRun", "2024-12-19"); // Placeholder
-        result.put("duration", completedTestCases > 0 ? "1m 30s" : null);
+        result.put("status", "not_run");
+        result.put("progress", Map.of("completed", 0, "total", totalTestCases));
+        result.put("lastRun", null);
+        result.put("duration", null);
 
         return result;
     }
@@ -201,11 +202,11 @@ public class TestSuitesService {
         testCaseMap.put("stepCount", stepCount);
         testCaseMap.put("isComplete", hasSteps);
         
-        // Calculate status based on steps availability
-        testCaseMap.put("status", hasSteps ? "passed" : "pending");
-        testCaseMap.put("progress", Map.of("completed", hasSteps ? stepCount : 0, "total", stepCount));
-        testCaseMap.put("lastRun", hasSteps ? "2024-12-19" : null);
-        testCaseMap.put("duration", hasSteps ? "45s" : null);
+        // Calculate status based on actual test results (default to not_run)
+        testCaseMap.put("status", "not_run");
+        testCaseMap.put("progress", Map.of("completed", 0, "total", stepCount));
+        testCaseMap.put("lastRun", null);
+        testCaseMap.put("duration", null);
         
         // Get steps if they exist
         if (hasSteps) {
