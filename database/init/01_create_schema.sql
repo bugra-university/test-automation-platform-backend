@@ -67,5 +67,5 @@ CREATE INDEX idx_sheet_name ON excel_sheets (sheet_name);
 CREATE INDEX idx_sheet_type ON excel_sheets (sheet_type);
 
 -- Create default project (owner_id = 1 is the default admin user)
-INSERT INTO projects (name, description, owner_id, created_at, updated_at)
-VALUES ('Default Project', 'Automatically created default project', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO projects (name, description, owner_id, owner_username, created_at, updated_at)
+VALUES ('Default Project', 'Automatically created default project', 1, 'admin', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
