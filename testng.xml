@@ -1,13 +1,198 @@
-<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
-<suite name="TestSuite">
-  <listeners>
-    <listener class-name="project_team09.utilities.DatabaseReporter"/>
-  </listeners>
-  
-  <!-- Docker ortamında çalıştırılacak test -->
-  <test name="us02">
-    <packages>
-      <package name="project_team09.tests.us02"/>
-    </packages>
-  </test>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+
+<suite name="Enhanced Test Automation Suite" parallel="tests" thread-count="3" verbose="2">
+    
+    <!-- Enhanced TestNG Listeners -->
+    <listeners>
+        <listener class-name="project_team09.utilities.EnhancedTestListener"/>
+        <listener class-name="project_team09.utilities.Listeners"/>
+        <listener class-name="project_team09.utilities.DatabaseReporter"/>
+    </listeners>
+    
+    <!-- Global Test Parameters -->
+    <parameter name="browser" value="chrome"/>
+    <parameter name="headless" value="true"/>
+    <parameter name="timeout" value="30"/>
+    <parameter name="baseUrl" value="https://allovercommerce.com"/>
+    
+    <!-- User Story 01: User Registration -->
+    <test name="US01_UserRegistration" preserve-order="true">
+        <parameter name="userStoryId" value="US_01"/>
+        <parameter name="description" value="User should be able to register successfully"/>
+        
+        <classes>
+            <class name="project_team09.tests.us01.Us01_KullaniciKaydiYapilabilmeli"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 02: Invalid User Registration -->
+    <test name="US02_InvalidUserRegistration" preserve-order="true">
+        <parameter name="userStoryId" value="US_02"/>
+        <parameter name="description" value="System should handle invalid registration attempts"/>
+        
+        <classes>
+            <class name="project_team09.tests.us02.Us02_GecersizYeniKullaniciKayit"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 03: Billing Address Management -->
+    <test name="US03_BillingAddress" preserve-order="true">
+        <parameter name="userStoryId" value="US_03"/>
+        <parameter name="description" value="User should be able to add billing address"/>
+        
+        <classes>
+            <class name="project_team09.tests.us03.Us03_BillingAdressEkle"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 04: Shipping Address Management -->
+    <test name="US04_ShippingAddress" preserve-order="true">
+        <parameter name="userStoryId" value="US_04"/>
+        <parameter name="description" value="User should be able to manage shipping addresses"/>
+        
+        <classes>
+            <class name="project_team09.tests.us04.ShipphingAddressEditMethodClass"/>
+            <class name="project_team09.tests.us04.Tc01"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 05: Account Details Management -->
+    <test name="US05_AccountDetails" preserve-order="true">
+        <parameter name="userStoryId" value="US_05"/>
+        <parameter name="description" value="User should be able to edit account details"/>
+        
+        <classes>
+            <class name="project_team09.tests.us05.AccountDetailsEditMethodClass"/>
+            <class name="project_team09.tests.us05.Tc01"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 06: Product Comparison -->
+    <test name="US06_ProductComparison" preserve-order="true">
+        <parameter name="userStoryId" value="US_06"/>
+        <parameter name="description" value="User should be able to compare products"/>
+        
+        <classes>
+            <class name="project_team09.tests.us06.TC01"/>
+            <class name="project_team09.tests.us06.TC02"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 07: Shopping Cart Functionality -->
+    <test name="US07_ShoppingCart" preserve-order="true">
+        <parameter name="userStoryId" value="US_07"/>
+        <parameter name="description" value="User should be able to manage shopping cart"/>
+        
+        <classes>
+            <class name="project_team09.tests.us07.TC01"/>
+            <class name="project_team09.tests.us07.TC02"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 08: Email Verification -->
+    <test name="US08_EmailVerification" preserve-order="true">
+        <parameter name="userStoryId" value="US_08"/>
+        <parameter name="description" value="Email verification functionality"/>
+        
+        <classes>
+            <class name="project_team09.tests.us08.TC_01_TC02_TC03_TC04"/>
+            <class name="project_team09.tests.us08.TC05_TC06_TC07_TC08_TC09_TC10"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 09: Shopping Process -->
+    <test name="US09_ShoppingProcess" preserve-order="true">
+        <parameter name="userStoryId" value="US_09"/>
+        <parameter name="description" value="Complete shopping process workflow"/>
+        
+        <classes>
+            <class name="project_team09.tests.us09.TC01"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 10: Advanced Features -->
+    <test name="US10_AdvancedFeatures" preserve-order="true">
+        <parameter name="userStoryId" value="US_10"/>
+        <parameter name="description" value="Advanced platform features"/>
+        
+        <classes>
+            <class name="project_team09.tests.us10.Us10"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 11: Additional Functionality -->
+    <test name="US11_AdditionalFeatures" preserve-order="true">
+        <parameter name="userStoryId" value="US_11"/>
+        <parameter name="description" value="Additional platform functionality"/>
+        
+        <classes>
+            <class name="project_team09.tests.us11.Us11"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 12: Vendor Sign In -->
+    <test name="US12_VendorSignIn" preserve-order="true">
+        <parameter name="userStoryId" value="US_12"/>
+        <parameter name="description" value="Vendor sign in functionality"/>
+        
+        <classes>
+            <class name="project_team09.tests.us12.TC01_VendorSignIn"/>
+            <class name="project_team09.tests.us12.TC02_BillingAdresEkleme"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 13: Vendor Address Management -->
+    <test name="US13_VendorAddresses" preserve-order="true">
+        <parameter name="userStoryId" value="US_13"/>
+        <parameter name="description" value="Vendor address management"/>
+        
+        <classes>
+            <class name="project_team09.tests.us13.TC01_ShippingAdresEkleme"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 14: Product Management -->
+    <test name="US14_ProductManagement" preserve-order="true">
+        <parameter name="userStoryId" value="US_14"/>
+        <parameter name="description" value="Vendor product management"/>
+        
+        <classes>
+            <class name="project_team09.tests.us14.TC01_VendorOlarakUrunEkleme"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 18: Customer Account Management -->
+    <test name="US18_CustomerAccount" preserve-order="true">
+        <parameter name="userStoryId" value="US_18"/>
+        <parameter name="description" value="Customer account management features"/>
+        
+        <classes>
+            <class name="project_team09.tests.us18.TC01"/>
+            <class name="project_team09.tests.us18.TC02"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 19: Order Management -->
+    <test name="US19_OrderManagement" preserve-order="true">
+        <parameter name="userStoryId" value="US_19"/>
+        <parameter name="description" value="Order management functionality"/>
+        
+        <classes>
+            <class name="project_team09.tests.us19.TC01"/>
+            <class name="project_team09.tests.us19.TC02"/>
+        </classes>
+    </test>
+    
+    <!-- User Story 20: Platform Administration -->
+    <test name="US20_PlatformAdmin" preserve-order="true">
+        <parameter name="userStoryId" value="US_20"/>
+        <parameter name="description" value="Platform administration features"/>
+        
+        <classes>
+            <class name="project_team09.tests.us20.TC01"/>
+            <class name="project_team09.tests.us20.TC02"/>
+        </classes>
+    </test>
+    
 </suite>

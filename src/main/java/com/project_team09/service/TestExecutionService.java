@@ -1,0 +1,505 @@
+package com.project_team09.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.testng.TestNG;
+import org.testng.xml.XmlSuite;
+import org.testng.xml.XmlTest;
+import org.testng.xml.XmlClass;
+import org.testng.xml.XmlInclude;
+
+import com.project_team09.model.TestCase;
+import com.project_team09.repository.TestCaseRepository;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+
+// Note: WebDriverManager and EnhancedTestListener are in test classpath
+// They will be available at runtime when tests are executed
+
+@Service
+public class TestExecutionService {
+
+    @Autowired
+    private TestCaseRepository testCaseRepository;
+
+    // Track running tests
+    private final Map<String, TestExecutionStatus> runningTests = new ConcurrentHashMap<>();
+
+    public static class TestExecutionStatus {
+        private String status;
+        private LocalDateTime startTime;
+        private LocalDateTime endTime;
+        private String testOutput;
+        private boolean isHeadless;
+        private String browser;
+
+        // Getters and setters
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+        
+        public LocalDateTime getStartTime() { return startTime; }
+        public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+        
+        public LocalDateTime getEndTime() { return endTime; }
+        public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+        
+        public String getTestOutput() { return testOutput; }
+        public void setTestOutput(String testOutput) { this.testOutput = testOutput; }
+        
+        public boolean isHeadless() { return isHeadless; }
+        public void setHeadless(boolean headless) { isHeadless = headless; }
+        
+        public String getBrowser() { return browser; }
+        public void setBrowser(String browser) { this.browser = browser; }
+    }
+
+    /**
+     * Execute test suite asynchronously with configuration
+     */
+    public CompletableFuture<Map<String, Object>> executeTestSuiteAsync(
+            Long projectId, String userStoryId, boolean isHeadless, String browser) {
+        
+        return CompletableFuture.supplyAsync(() -> {
+            String executionId = generateExecutionId(projectId, userStoryId);
+            
+            try {
+                // Create execution status
+                TestExecutionStatus status = new TestExecutionStatus();
+                status.setStatus("RUNNING");
+                status.setStartTime(LocalDateTime.now());
+                status.setHeadless(isHeadless);
+                status.setBrowser(browser);
+                runningTests.put(executionId, status);
+
+                // Get test cases for this user story
+                List<TestCase> testCases = testCaseRepository.findByProjectIdAndUserStoryId(projectId, userStoryId);
+                
+                if (testCases.isEmpty()) {
+                    status.setStatus("FAILED");
+                    status.setEndTime(LocalDateTime.now());
+                    status.setTestOutput("No test cases found for user story: " + userStoryId);
+                    return createExecutionResult(executionId, status, "No test cases found");
+                }
+
+                // Configure TestNG
+                TestNG testng = new TestNG();
+                
+                // Set system properties for WebDriver configuration
+                System.setProperty("webdriver.headless", String.valueOf(isHeadless));
+                System.setProperty("webdriver.browser", browser.toLowerCase());
+                System.setProperty("test.userStoryId", userStoryId);
+                System.setProperty("test.projectId", String.valueOf(projectId));
+                System.setProperty("test.executionId", executionId);
+
+                // Create XML suite programmatically
+                XmlSuite suite = createTestSuite(userStoryId, testCases);
+                testng.setXmlSuites(Arrays.asList(suite));
+                
+                // Set output directory with execution ID
+                String outputDir = "TestOutput/execution_" + executionId;
+                testng.setOutputDirectory(outputDir);
+                
+                // Run tests
+                System.out.println("[TestExecution] Starting test suite: " + userStoryId + " (ID: " + executionId + ")");
+                System.out.println("[TestExecution] Browser: " + browser + " (headless: " + isHeadless + ")");
+                System.out.println("[TestExecution] Output directory: " + outputDir);
+                
+                testng.run();
+                
+                // Update status - listeners will provide detailed results
+                status.setStatus("COMPLETED");
+                status.setEndTime(LocalDateTime.now());
+                status.setTestOutput("Test execution completed. Output: " + outputDir);
+                
+                System.out.println("[TestExecution] Completed: " + userStoryId);
+                
+                return createExecutionResult(executionId, status, "Test suite executed successfully");
+
+            } catch (Exception e) {
+                System.err.println("[TestExecution] Error in test suite: " + userStoryId + " - " + e.getMessage());
+                e.printStackTrace();
+                
+                // Handle execution failure
+                TestExecutionStatus status = runningTests.get(executionId);
+                if (status != null) {
+                    status.setStatus("FAILED");
+                    status.setEndTime(LocalDateTime.now());
+                    status.setTestOutput("Execution failed: " + e.getMessage());
+                }
+                
+                return createExecutionResult(executionId, status, "Test execution failed: " + e.getMessage());
+            } finally {
+                // WebDriver cleanup handled by TestNG listeners
+                System.out.println("[TestExecution] Execution finished for: " + userStoryId);
+            }
+        });
+    }
+
+    /**
+     * Execute single test case asynchronously with configuration
+     */
+    public CompletableFuture<Map<String, Object>> executeTestCaseAsync(
+            Long projectId, String testCaseId, boolean isHeadless, String browser) {
+        
+        System.out.println("\n" + "=".repeat(60));
+        System.out.println("[TestExecution] SERVICE METHOD CALLED");
+        System.out.println("[TestExecution] Parameters: projectId=" + projectId + ", testCaseId=" + testCaseId);
+        System.out.println("[TestExecution] Config: isHeadless=" + isHeadless + ", browser=" + browser);
+        System.out.println("=".repeat(60));
+        
+        return CompletableFuture.supplyAsync(() -> {
+            System.out.println("[TestExecution] ASYNC THREAD STARTED");
+            System.out.println("[TestExecution] Thread: " + Thread.currentThread().getName());
+            String executionId = generateExecutionId(projectId, "TC_" + testCaseId);
+            
+            try {
+                System.out.println("[TestExecution] Step 1: Creating execution status...");
+                // Create execution status
+                TestExecutionStatus status = new TestExecutionStatus();
+                status.setStatus("RUNNING");
+                status.setStartTime(LocalDateTime.now());
+                status.setHeadless(isHeadless);
+                status.setBrowser(browser);
+                runningTests.put(executionId, status);
+                System.out.println("[TestExecution] Step 1 OK: Status created");
+
+                System.out.println("[TestExecution] Step 2: Parsing test case ID '" + testCaseId + "'...");
+                // Get specific test case by parsing the ID
+                Long testCaseDbId;
+                try {
+                    // Extract numeric ID from test case ID (e.g., "US_01-TC_01" -> extract numeric part)
+                    String numericPart = testCaseId.replaceAll(".*TC_", "").replaceAll("[^0-9]", "");
+                    System.out.println("[TestExecution] Step 2: Extracted numeric part = '" + numericPart + "'");
+                    testCaseDbId = Long.parseLong(numericPart);
+                    System.out.println("[TestExecution] Step 2 OK: Parsed DB ID = " + testCaseDbId);
+                } catch (NumberFormatException e) {
+                    status.setStatus("FAILED");
+                    status.setEndTime(LocalDateTime.now());
+                    status.setTestOutput("Invalid test case ID format: " + testCaseId);
+                    return createExecutionResult(executionId, status, "Invalid test case ID format");
+                }
+                
+                System.out.println("[TestExecution] Step 3: Looking up test case in database...");
+                System.out.println("[TestExecution] Step 3: Using DB ID = " + testCaseDbId);
+                
+                // Debug: List all test cases for this project
+                List<TestCase> allTestCases = testCaseRepository.findByProjectId(projectId);
+                System.out.println("[TestExecution] Step 3 DEBUG: Found " + allTestCases.size() + " test cases for project " + projectId);
+                for (TestCase tc : allTestCases) {
+                    System.out.println("[TestExecution] Step 3 DEBUG: - ID=" + tc.getId() + ", TestCaseId='" + tc.getTestCaseId() + "', UserStory=" + tc.getUserStoryId());
+                }
+                
+                Optional<TestCase> testCaseOpt = testCaseRepository.findById(testCaseDbId);
+                System.out.println("[TestExecution] Step 3: Query result - isPresent = " + testCaseOpt.isPresent());
+                
+                if (!testCaseOpt.isPresent()) {
+                    System.out.println("[TestExecution] ❌ Step 3 FAILED: Test case not found with DB ID = " + testCaseDbId);
+                    System.out.println("[TestExecution] ❌ Trying alternative lookup by testCaseId = '" + testCaseId + "'");
+                    
+                    // Try alternative lookup by testCaseId
+                    List<TestCase> matchingCases = allTestCases.stream()
+                        .filter(tc -> testCaseId.equals(tc.getTestCaseId()))
+                        .collect(java.util.stream.Collectors.toList());
+                    
+                    if (!matchingCases.isEmpty()) {
+                        testCaseOpt = Optional.of(matchingCases.get(0));
+                        System.out.println("[TestExecution] ✅ Step 3 RECOVERED: Found test case by testCaseId, actual DB ID = " + matchingCases.get(0).getId());
+                    } else {
+                        System.out.println("[TestExecution] ❌ Step 3 FINAL FAILURE: No test case found with testCaseId = '" + testCaseId + "'");
+                    }
+                }
+                
+                if (!testCaseOpt.isPresent()) {
+                    status.setStatus("FAILED");
+                    status.setEndTime(LocalDateTime.now());
+                    status.setTestOutput("Test case not found: " + testCaseId + " (DB ID: " + testCaseDbId + ")");
+                    return createExecutionResult(executionId, status, "Test case not found");
+                }
+
+                TestCase testCase = testCaseOpt.get();
+
+                // Set system properties for WebDriver configuration
+                System.setProperty("webdriver.headless", String.valueOf(isHeadless));
+                System.setProperty("webdriver.browser", browser.toLowerCase());
+                System.setProperty("test.testCaseId", String.valueOf(testCaseId));
+                System.setProperty("test.testCaseDbId", String.valueOf(testCaseDbId));
+                System.setProperty("test.projectId", String.valueOf(projectId));
+                System.setProperty("test.executionId", executionId);
+                System.setProperty("test.userStoryId", testCase.getUserStoryId());
+                System.setProperty("test.methodName", mapTestCaseToMethod(testCase) != null ? mapTestCaseToMethod(testCase) : "unknown");
+
+                // Configure TestNG for single test case
+                TestNG testng = new TestNG();
+                XmlSuite suite = createSingleTestCaseSuite(testCase);
+                testng.setXmlSuites(Arrays.asList(suite));
+                
+                // Set output directory with execution ID
+                String outputDir = "TestOutput/execution_" + executionId;
+                testng.setOutputDirectory(outputDir);
+                
+                // Run test
+                System.out.println("\n" + "=".repeat(60));
+                System.out.println("[TestExecution] STARTING TEST CASE EXECUTION");
+                System.out.println("[TestExecution] Test Case ID: " + testCaseId);
+                System.out.println("[TestExecution] Execution ID: " + executionId);
+                System.out.println("[TestExecution] Browser: " + browser + " (headless: " + isHeadless + ")");
+                System.out.println("[TestExecution] Test case details: " + testCase.getTestCaseId() + " - " + testCase.getObjective());
+                System.out.println("[TestExecution] Generated suite: " + suite.getName());
+                System.out.println("[TestExecution] Test classes count: " + (suite.getTests().isEmpty() ? 0 : suite.getTests().get(0).getXmlClasses().size()));
+                System.out.println("=".repeat(60));
+                
+                // For debugging - let's see what classes we're trying to run
+                if (!suite.getTests().isEmpty() && !suite.getTests().get(0).getXmlClasses().isEmpty()) {
+                    System.out.println("[TestExecution] Test class: " + suite.getTests().get(0).getXmlClasses().get(0).getName());
+                } else {
+                    System.out.println("[TestExecution] WARNING: No test classes found for test case: " + testCaseId);
+                    status.setStatus("FAILED");
+                    status.setEndTime(LocalDateTime.now());
+                    status.setTestOutput("No test classes found for test case: " + testCaseId);
+                    return createExecutionResult(executionId, status, "No test classes mapped for this test case");
+                }
+                
+                System.out.println("[TestExecution] About to run TestNG...");
+                testng.run();
+                System.out.println("[TestExecution] TestNG execution completed.");
+                
+                // Check TestNG execution results
+                if (testng.hasFailure()) {
+                    System.out.println("[TestExecution] ❌ TestNG reported failures");
+                    status.setStatus("FAILED");
+                } else {
+                    System.out.println("[TestExecution] ✅ TestNG completed successfully");
+                    status.setStatus("COMPLETED");
+                }
+                
+                // Update status - listeners will provide detailed results
+                status.setEndTime(LocalDateTime.now());
+                status.setTestOutput("Test case execution completed. Output: " + outputDir);
+                
+                System.out.println("[TestExecution] Completed: " + testCaseId);
+                
+                return createExecutionResult(executionId, status, "Test case executed successfully");
+
+            } catch (Exception e) {
+                System.out.println("\n" + "=".repeat(60));
+                System.out.println("[TestExecution] ❌ CRITICAL ERROR OCCURRED");
+                System.out.println("[TestExecution] Test Case ID: " + testCaseId);
+                System.out.println("[TestExecution] Execution ID: " + executionId);
+                System.out.println("[TestExecution] Error Type: " + e.getClass().getSimpleName());
+                System.out.println("[TestExecution] Error Message: " + e.getMessage());
+                System.out.println("=".repeat(60));
+                System.out.println("[TestExecution] Full Stack Trace:");
+                e.printStackTrace();
+                System.out.println("=".repeat(60));
+                
+                // Handle execution failure
+                TestExecutionStatus status = runningTests.get(executionId);
+                if (status != null) {
+                    status.setStatus("FAILED");
+                    status.setEndTime(LocalDateTime.now());
+                    status.setTestOutput("Execution failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+                }
+                
+                return createExecutionResult(executionId, status, "Test case execution failed: " + e.getMessage());
+            } finally {
+                // WebDriver cleanup handled by TestNG listeners
+                System.out.println("[TestExecution] Execution finished for test case: " + testCaseId);
+            }
+        });
+    }
+
+    /**
+     * Get execution status by ID
+     */
+    public Map<String, Object> getExecutionStatus(String executionId) {
+        TestExecutionStatus status = runningTests.get(executionId);
+        if (status == null) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("found", false);
+            result.put("message", "Execution not found");
+            return result;
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("found", true);
+        result.put("status", status.getStatus());
+        result.put("startTime", status.getStartTime());
+        result.put("endTime", status.getEndTime());
+        result.put("output", status.getTestOutput());
+        result.put("configuration", Map.of(
+            "isHeadless", status.isHeadless(),
+            "browser", status.getBrowser()
+        ));
+
+        return result;
+    }
+
+    // Helper methods
+    private String generateExecutionId(Long projectId, String identifier) {
+        return projectId + "_" + identifier + "_" + System.currentTimeMillis();
+    }
+
+    private Map<String, Object> createExecutionResult(String executionId, TestExecutionStatus status, String message) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("executionId", executionId);
+        result.put("status", status.getStatus());
+        result.put("startTime", status.getStartTime());
+        result.put("endTime", status.getEndTime());
+        result.put("message", message);
+        result.put("configuration", Map.of(
+            "isHeadless", status.isHeadless(),
+            "browser", status.getBrowser()
+        ));
+        return result;
+    }
+
+    private XmlSuite createTestSuite(String userStoryId, List<TestCase> testCases) {
+        XmlSuite suite = new XmlSuite();
+        suite.setName("UserStory_" + userStoryId);
+        
+        XmlTest test = new XmlTest(suite);
+        test.setName("TestSuite_" + userStoryId);
+        
+        // Add test classes based on user story mapping
+        List<XmlClass> classes = new ArrayList<>();
+        
+        // Map user story to actual test classes
+        String testClassName = mapUserStoryToTestClass(userStoryId);
+        if (testClassName != null) {
+            classes.add(new XmlClass(testClassName));
+        }
+        
+        test.setXmlClasses(classes);
+        return suite;
+    }
+
+    private XmlSuite createSingleTestCaseSuite(TestCase testCase) {
+        XmlSuite suite = new XmlSuite();
+        suite.setName("SingleTestCase_" + testCase.getTestCaseId());
+        
+        XmlTest test = new XmlTest(suite);
+        test.setName("TestCase_" + testCase.getTestCaseId());
+        
+        // Map test case to actual test class and method
+        String testClassName = mapTestCaseToTestClass(testCase);
+        String testMethodName = mapTestCaseToMethod(testCase);
+        
+        if (testClassName != null && testMethodName != null) {
+            XmlClass xmlClass = new XmlClass(testClassName);
+            
+            // Configure to run only specific test method
+            List<XmlInclude> includeMethods = Arrays.asList(new XmlInclude(testMethodName));
+            xmlClass.setIncludedMethods(includeMethods);
+            
+            test.setXmlClasses(Arrays.asList(xmlClass));
+            
+            System.out.println("[TestExecution] Configured single test case:");
+            System.out.println("  - Class: " + testClassName);
+            System.out.println("  - Method: " + testMethodName);
+            System.out.println("  - Test Case: " + testCase.getTestCaseId() + " (" + testCase.getObjective() + ")");
+        } else {
+            System.out.println("[TestExecution] WARNING: Could not map test case to class/method:");
+            System.out.println("  - Test Case ID: " + testCase.getTestCaseId());
+            System.out.println("  - User Story: " + testCase.getUserStoryId());
+            System.out.println("  - Mapped Class: " + testClassName);
+            System.out.println("  - Mapped Method: " + testMethodName);
+        }
+        
+        return suite;
+    }
+
+    private String mapUserStoryToTestClass(String userStoryId) {
+        // Map user story IDs to actual test class names
+        Map<String, String> userStoryMapping = new HashMap<>();
+        userStoryMapping.put("US01", "project_team09.tests.us01.Us01_KullaniciKaydiYapilabilmeli");  // Fixed: US01 not US_01
+        userStoryMapping.put("US02", "project_team09.tests.us02.Us02_GecersizYeniKullaniciKayit");   // Fixed: US02 not US_02
+        userStoryMapping.put("US03", "project_team09.tests.us03.Us03_BillingAdressEkle");            // Fixed: US03 not US_03
+        // Add more mappings as needed
+        
+        System.out.println("[TestExecution] mapUserStoryToTestClass: userStoryId='" + userStoryId + "' -> " + userStoryMapping.get(userStoryId));
+        return userStoryMapping.get(userStoryId);
+    }
+
+    private String mapTestCaseToTestClass(TestCase testCase) {
+        String userStoryId = testCase.getUserStoryId();
+        String testCaseId = testCase.getTestCaseId();
+        
+        // For US01 - single class with multiple test methods
+        if ("US01".equals(userStoryId)) {
+            return "project_team09.tests.us01.Us01_KullaniciKaydiYapilabilmeli";
+        }
+        
+        // For US04 - each test case has its own class
+        if ("US04".equals(userStoryId)) {
+            switch (testCaseId) {
+                case "TC01": return "project_team09.tests.us04.Tc01";
+                case "TC02": return "project_team09.tests.us04.Tc02";
+                case "TC03": return "project_team09.tests.us04.Tc03";
+                case "TC04": return "project_team09.tests.us04.Tc04";
+                case "TC05": return "project_team09.tests.us04.Tc05";
+                case "TC06": return "project_team09.tests.us04.Tc06";
+                case "TC07": return "project_team09.tests.us04.Tc07";
+                case "TC08": return "project_team09.tests.us04.Tc08";
+                case "TC09": return "project_team09.tests.us04.Tc09";
+                case "TC10": return "project_team09.tests.us04.Tc10";
+                default: return null;
+            }
+        }
+        
+        // For US02, US03 - need to check their structure
+        if ("US02".equals(userStoryId)) {
+            return "project_team09.tests.us02.Us02_GecersizYeniKullaniciKayit";
+        }
+        
+        if ("US03".equals(userStoryId)) {
+            return "project_team09.tests.us03.Us03_BillingAdressEkle";
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Map test case ID to specific test method name
+     */
+    private String mapTestCaseToMethod(TestCase testCase) {
+        String userStoryId = testCase.getUserStoryId();
+        String testCaseId = testCase.getTestCaseId();
+        
+        // Mapping for US01 test cases to methods (single class with multiple @Test methods)
+        if ("US01".equals(userStoryId)) {
+            switch (testCaseId) {
+                case "TC01": return "tc01_KullaniciKayit";
+                case "TC02": return "tc02_withoutUsernameNotRegister";
+                case "TC03": return "tc03_withoutEmailNotRegister";
+                case "TC04": return "tc04_withoutPasswordNotRegister";
+                case "TC05": return "tc05_WithoutIagreeClickNotRegister";
+                case "TC06": return "tc06_hataliemailileKayitOlma";
+                case "TC07": return "tc07_withoutComEmailIleKayitOlma";
+                case "TC08": return "tc08_sekizChrctrPasswordkayit";
+                case "TC09": return "tc09_dokuzChrctrPasswordkayit";
+                case "TC10": return "tc10_yediChrctrPasswordkayitOlma";
+                case "TC11": return "tc11_passwordSadeceRakamlaKayitOlma";
+                case "TC12": return "tc12_buyukkucukHarfRakamUsernameKayit";
+                case "TC13": return "tc13_usernameOzelkarakterKayit";
+                default: return null;
+            }
+        }
+        
+        // For US04 and other user stories - each test case is a separate class with test01() method
+        if ("US04".equals(userStoryId)) {
+            // All US04 test classes have test01() method
+            return "test01";
+        }
+        
+        // Add mappings for other user stories as needed
+        if ("US02".equals(userStoryId) || "US03".equals(userStoryId)) {
+            // These also likely follow the separate class pattern
+            return "test01";
+        }
+        
+        return null;
+    }
+} 

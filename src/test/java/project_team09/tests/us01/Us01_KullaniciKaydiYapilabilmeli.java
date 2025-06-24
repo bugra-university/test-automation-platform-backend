@@ -7,6 +7,7 @@ import org.testng.asserts.SoftAssert;
 import project_team09.pages.Us01Us02Us03.Anasayfa;
 import project_team09.utilities.ConfigReader;
 import project_team09.utilities.Driver;
+import project_team09.utilities.WebDriverManager;
 import project_team09.utilities.ExtentReport;
 import project_team09.utilities.ReusableMethods;
 
@@ -21,8 +22,21 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","İstenen tüm bilgiler girildiğinde kayıt işlemi gerçekleşmeli test edildi");
 
+        // Initialize WebDriver with system properties (set by TestExecutionService)
+        if (!WebDriverManager.isDriverReady()) {
+            System.out.println("[TC01] WebDriverManager not ready, initializing...");
+            WebDriverManager.initializeDriver();
+        } else {
+            System.out.println("[TC01] WebDriverManager already ready");
+        }
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC01] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Take initial screenshot
+        WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "test_start");
+        
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -59,10 +73,16 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
 
         softAssert.assertTrue(anasayfa.signOutAs.isDisplayed());
         extentTest.info("Kayıt işleminin gerçekleştiğini doğrulandı");
+        
+        // Take final screenshot
+        WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_success");
 
-        //sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
+        //sayfayı kapat - WebDriverManager handles cleanup via listeners
+        // Driver.closeDriver(); // Removed - let WebDriverManager handle this
+        extentTest.info("test completed successfully");
+        
+        // Assert all soft assertions
+        softAssert.assertAll();
 
 
     }

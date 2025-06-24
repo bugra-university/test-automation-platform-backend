@@ -97,31 +97,78 @@ public class TestSuitesService {
     }
 
     /**
-     * Run a test suite (User Story) - placeholder implementation
+     * Run a test suite (User Story) with configuration - placeholder implementation
      */
-    public Map<String, Object> runTestSuite(Long projectId, String userStoryId) {
+    public Map<String, Object> runTestSuite(Long projectId, String userStoryId, boolean isHeadless, String browser) {
         Map<String, Object> result = new HashMap<>();
         result.put("userStoryId", userStoryId);
         result.put("status", "started");
         result.put("startTime", LocalDateTime.now());
         result.put("message", "Test suite execution started for " + userStoryId);
+        result.put("configuration", Map.of(
+            "isHeadless", isHeadless,
+            "browser", browser
+        ));
         
         // TODO: Implement actual test execution logic
+        // This will integrate with TestNG and WebDriver based on configuration
         return result;
     }
 
     /**
-     * Run a specific test case - placeholder implementation
+     * Run a test suite (User Story) - backward compatibility
      */
-    public Map<String, Object> runTestCase(Long projectId, Long testCaseId) {
+    public Map<String, Object> runTestSuite(Long projectId, String userStoryId) {
+        return runTestSuite(projectId, userStoryId, true, "chrome");
+    }
+
+    /**
+     * Run a specific test case with configuration - placeholder implementation
+     */
+    public Map<String, Object> runTestCase(Long projectId, Long testCaseId, boolean isHeadless, String browser) {
         Map<String, Object> result = new HashMap<>();
         result.put("testCaseId", testCaseId);
         result.put("status", "started");
         result.put("startTime", LocalDateTime.now());
         result.put("message", "Test case execution started for ID: " + testCaseId);
+        result.put("configuration", Map.of(
+            "isHeadless", isHeadless,
+            "browser", browser
+        ));
         
         // TODO: Implement actual test execution logic
+        // This will integrate with TestNG and WebDriver based on configuration
         return result;
+    }
+
+    /**
+     * Run a specific test case - backward compatibility
+     */
+    public Map<String, Object> runTestCase(Long projectId, Long testCaseId) {
+        return runTestCase(projectId, testCaseId, true, "chrome");
+    }
+
+    /**
+     * Get test suites statistics for a project
+     */
+    public Map<String, Object> getTestSuitesStatistics(Long projectId) {
+        List<TestCase> allTestCases = testCaseRepository.findByProjectId(projectId);
+        List<ProductBacklogItem> backlogItems = productBacklogItemRepository.findByProjectId(projectId);
+        
+        Map<String, Object> statistics = new HashMap<>();
+        statistics.put("totalStories", backlogItems.size());
+        statistics.put("totalTestCases", allTestCases.size());
+        
+        // Create statusCounts object as expected by frontend
+        Map<String, Object> statusCounts = new HashMap<>();
+        statusCounts.put("passed", 0);
+        statusCounts.put("failed", 0);
+        statusCounts.put("pending", allTestCases.size()); // All tests are pending initially
+        statusCounts.put("not_run", allTestCases.size());
+        
+        statistics.put("statusCounts", statusCounts);
+        
+        return statistics;
     }
 
     // Helper methods
@@ -179,7 +226,7 @@ public class TestSuitesService {
             .count();
 
         result.put("status", "not_run");
-        result.put("progress", Map.of("completed", 0, "total", totalTestCases));
+        result.put("progress", Map.of("completed", completedTestCases, "total", totalTestCases));
         result.put("lastRun", null);
         result.put("duration", null);
 

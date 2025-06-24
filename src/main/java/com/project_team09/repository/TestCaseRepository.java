@@ -15,6 +15,8 @@ public interface TestCaseRepository extends JpaRepository<TestCase, Long> {
 
     List<TestCase> findByProjectId(Long projectId);
 
+    List<TestCase> findByProjectIdAndUserStoryId(Long projectId, String userStoryId);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM TestCase tc WHERE tc.project.id = :projectId")

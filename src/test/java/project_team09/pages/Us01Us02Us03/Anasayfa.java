@@ -4,11 +4,25 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import org.openqa.selenium.support.PageFactory;
 import project_team09.utilities.Driver;
+import project_team09.utilities.WebDriverManager;
 
 public class Anasayfa {
 
     public Anasayfa() {
-        PageFactory.initElements(Driver.getDriver(), this);
+        // Try WebDriverManager first, fallback to old Driver if needed
+        try {
+            if (WebDriverManager.isDriverReady()) {
+                PageFactory.initElements(WebDriverManager.getDriver(), this);
+                System.out.println("[Anasayfa] Initialized with WebDriverManager");
+            } else {
+                PageFactory.initElements(Driver.getDriver(), this);
+                System.out.println("[Anasayfa] Initialized with legacy Driver");
+            }
+        } catch (Exception e) {
+            // Fallback to legacy driver
+            PageFactory.initElements(Driver.getDriver(), this);
+            System.out.println("[Anasayfa] Fallback to legacy Driver: " + e.getMessage());
+        }
     }
 
     @FindBy(xpath = "//*[@class='register inline-type']")
