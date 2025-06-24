@@ -17,7 +17,6 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
     @Test
     public void tc01_KullaniciKayit() {
 
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","İstenen tüm bilgiler girildiğinde kayıt işlemi gerçekleşmeli test edildi");
@@ -33,6 +32,9 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         //Web sitesine git ve doğrula
         System.out.println("[TC01] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
         WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         
         // Take initial screenshot
         WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "test_start");

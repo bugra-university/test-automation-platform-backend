@@ -427,12 +427,22 @@ public class TestExecutionService {
         String userStoryId = testCase.getUserStoryId();
         String testCaseId = testCase.getTestCaseId();
         
-        // For US01 - single class with multiple test methods
+        // US01 - single class with multiple test methods
         if ("US01".equals(userStoryId)) {
             return "project_team09.tests.us01.Us01_KullaniciKaydiYapilabilmeli";
         }
         
-        // For US04 - each test case has its own class
+        // US02 - single class with multiple test methods 
+        if ("US02".equals(userStoryId)) {
+            return "project_team09.tests.us02.Us02_GecersizYeniKullaniciKayit";
+        }
+        
+        // US03 - single class with multiple test methods
+        if ("US03".equals(userStoryId)) {
+            return "project_team09.tests.us03.Us03_BillingAdressEkle";
+        }
+        
+        // US04 - each test case has its own class
         if ("US04".equals(userStoryId)) {
             switch (testCaseId) {
                 case "TC01": return "project_team09.tests.us04.Tc01";
@@ -449,14 +459,27 @@ public class TestExecutionService {
             }
         }
         
-        // For US02, US03 - need to check their structure
-        if ("US02".equals(userStoryId)) {
-            return "project_team09.tests.us02.Us02_GecersizYeniKullaniciKayit";
+        // US08 - grouped test cases in separate classes
+        if ("US08".equals(userStoryId)) {
+            switch (testCaseId) {
+                case "TC01":
+                case "TC02": 
+                case "TC03":
+                case "TC04": 
+                    return "project_team09.tests.us08.TC_01_TC02_TC03_TC04";
+                case "TC05":
+                case "TC06":
+                case "TC07":
+                case "TC08":
+                case "TC09":
+                case "TC10":
+                    return "project_team09.tests.us08.TC05_TC06_TC07_TC08_TC09_TC10";
+                default: return null;
+            }
         }
         
-        if ("US03".equals(userStoryId)) {
-            return "project_team09.tests.us03.Us03_BillingAdressEkle";
-        }
+        // Add more user stories as needed...
+        // TODO: Add mappings for US05-US07, US09-US20
         
         return null;
     }
@@ -468,7 +491,7 @@ public class TestExecutionService {
         String userStoryId = testCase.getUserStoryId();
         String testCaseId = testCase.getTestCaseId();
         
-        // Mapping for US01 test cases to methods (single class with multiple @Test methods)
+        // US01 - single class with multiple @Test methods
         if ("US01".equals(userStoryId)) {
             switch (testCaseId) {
                 case "TC01": return "tc01_KullaniciKayit";
@@ -488,16 +511,32 @@ public class TestExecutionService {
             }
         }
         
-        // For US04 and other user stories - each test case is a separate class with test01() method
+        // US02, US03 - single class with multiple methods (need to check actual method names)
+        if ("US02".equals(userStoryId) || "US03".equals(userStoryId)) {
+            // TODO: Check actual method names in these classes
+            return "test01"; // placeholder
+        }
+        
+        // US04 - each test case is a separate class with test01() method
         if ("US04".equals(userStoryId)) {
-            // All US04 test classes have test01() method
             return "test01";
         }
         
-        // Add mappings for other user stories as needed
-        if ("US02".equals(userStoryId) || "US03".equals(userStoryId)) {
-            // These also likely follow the separate class pattern
-            return "test01";
+        // US08 - grouped test cases with specific method names
+        if ("US08".equals(userStoryId)) {
+            switch (testCaseId) {
+                case "TC01": return "testAddProductsToWishlist";
+                case "TC02": return "testQuickViewFunctionality"; 
+                case "TC03": return "testCheckoutProcess";
+                case "TC04": return "testCheckoutProcess"; // Same method handles multiple scenarios
+                case "TC05": return "testFirstNameRequired";
+                case "TC06": return "testLastNameRequired";
+                case "TC07": return "testStreetAddressRequired";
+                case "TC08": return "testPostCodeRequired";
+                case "TC09": return "testTownCityRequired";
+                case "TC10": return "testProvinceRequired";
+                default: return null;
+            }
         }
         
         return null;

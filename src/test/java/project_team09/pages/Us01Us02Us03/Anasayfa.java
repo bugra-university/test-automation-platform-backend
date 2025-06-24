@@ -9,19 +9,13 @@ import project_team09.utilities.WebDriverManager;
 public class Anasayfa {
 
     public Anasayfa() {
-        // Try WebDriverManager first, fallback to old Driver if needed
-        try {
-            if (WebDriverManager.isDriverReady()) {
-                PageFactory.initElements(WebDriverManager.getDriver(), this);
-                System.out.println("[Anasayfa] Initialized with WebDriverManager");
-            } else {
-                PageFactory.initElements(Driver.getDriver(), this);
-                System.out.println("[Anasayfa] Initialized with legacy Driver");
-            }
-        } catch (Exception e) {
-            // Fallback to legacy driver
+        // Use WebDriverManager only for test execution from TestExecutionService
+        if (WebDriverManager.isDriverReady()) {
+            PageFactory.initElements(WebDriverManager.getDriver(), this);
+            System.out.println("[Anasayfa] Initialized with WebDriverManager");
+        } else {
             PageFactory.initElements(Driver.getDriver(), this);
-            System.out.println("[Anasayfa] Fallback to legacy Driver: " + e.getMessage());
+            System.out.println("[Anasayfa] Initialized with legacy Driver");
         }
     }
 
