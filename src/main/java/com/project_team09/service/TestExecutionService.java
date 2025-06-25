@@ -8,6 +8,7 @@ import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlTest;
 import org.testng.xml.XmlClass;
 import org.testng.xml.XmlInclude;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.project_team09.model.TestCase;
 import com.project_team09.model.TestRun;
@@ -20,6 +21,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.io.IOException;
 
 // Note: WebDriverManager and EnhancedTestListener are in test classpath
 // They will be available at runtime when tests are executed
@@ -38,6 +41,9 @@ public class TestExecutionService {
 
     // Track running tests
     private final Map<String, TestExecutionStatus> runningTests = new ConcurrentHashMap<>();
+    
+    // SSE Event Streams for real-time updates
+    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> projectEventStreams = new ConcurrentHashMap<>();
 
     public static class TestExecutionStatus {
         private String status;
@@ -84,6 +90,51 @@ public class TestExecutionService {
     }
 
     /**
+     * Register SSE emitter for real-time test execution events
+     */
+    public void registerEventStream(Long projectId, SseEmitter emitter) {
+        projectEventStreams.computeIfAbsent(projectId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        System.out.println("[SSE] Registered event stream for project " + projectId + 
+                          ". Total streams: " + projectEventStreams.get(projectId).size());
+    }
+
+    /**
+     * Unregister SSE emitter when connection closes
+     */
+    public void unregisterEventStream(Long projectId, SseEmitter emitter) {
+        CopyOnWriteArrayList<SseEmitter> emitters = projectEventStreams.get(projectId);
+        if (emitters != null) {
+            emitters.remove(emitter);
+            if (emitters.isEmpty()) {
+                projectEventStreams.remove(projectId);
+            }
+            System.out.println("[SSE] Unregistered event stream for project " + projectId + 
+                              ". Remaining streams: " + emitters.size());
+        }
+    }
+
+    /**
+     * Send real-time event to all connected clients for a project
+     */
+    private void sendEventToClients(Long projectId, String eventName, Object data) {
+        CopyOnWriteArrayList<SseEmitter> emitters = projectEventStreams.get(projectId);
+        if (emitters != null && !emitters.isEmpty()) {
+            System.out.println("[SSE] Sending event '" + eventName + "' to " + emitters.size() + " clients");
+            
+            for (SseEmitter emitter : new CopyOnWriteArrayList<>(emitters)) {
+                try {
+                    emitter.send(SseEmitter.event()
+                        .name(eventName)
+                        .data(data));
+                } catch (IOException e) {
+                    System.out.println("[SSE] Failed to send event to client, removing emitter: " + e.getMessage());
+                    emitters.remove(emitter);
+                }
+            }
+        }
+    }
+
+    /**
      * Execute test suite asynchronously with configuration
      */
     public CompletableFuture<Map<String, Object>> executeTestSuiteAsync(
@@ -100,6 +151,15 @@ public class TestExecutionService {
                 status.setHeadless(isHeadless);
                 status.setBrowser(browser);
                 runningTests.put(executionId, status);
+
+                // Send real-time start event
+                sendEventToClients(projectId, "test_suite_started", Map.of(
+                    "userStoryId", userStoryId,
+                    "executionId", executionId,
+                    "status", "RUNNING",
+                    "startTime", status.getStartTime(),
+                    "configuration", Map.of("isHeadless", isHeadless, "browser", browser)
+                ));
 
                 // Get test cases for this user story
                 List<TestCase> testCases = testCaseRepository.findByProjectIdAndUserStoryId(projectId, userStoryId);
@@ -140,6 +200,15 @@ public class TestExecutionService {
                 status.setStatus("COMPLETED");
                 status.setEndTime(LocalDateTime.now());
                 status.setTestOutput("Test execution completed. Output: " + outputDir);
+                
+                // Send completion event
+                sendEventToClients(projectId, "test_suite_completed", Map.of(
+                    "userStoryId", userStoryId,
+                    "executionId", executionId,
+                    "status", "COMPLETED",
+                    "endTime", status.getEndTime(),
+                    "duration", java.time.Duration.between(status.getStartTime(), status.getEndTime()).toMillis()
+                ));
                 
                 System.out.println("[TestExecution] Completed: " + userStoryId);
                 
@@ -192,6 +261,15 @@ public class TestExecutionService {
                 status.setBrowser(browser);
                 runningTests.put(executionId, status);
                 System.out.println("[TestExecution] Step 1 OK: Status created");
+
+                // Send real-time start event
+                sendEventToClients(projectId, "test_case_started", Map.of(
+                    "testCaseId", testCaseId,
+                    "executionId", executionId,
+                    "status", "RUNNING",
+                    "startTime", status.getStartTime(),
+                    "configuration", Map.of("isHeadless", isHeadless, "browser", browser)
+                ));
 
                 // Create TestRun database record
                 TestRun testRun = new TestRun(projectId, "Test Case: " + testCaseId, "RUNNING");
@@ -331,6 +409,16 @@ public class TestExecutionService {
                 // Calculate duration
                 long durationMs = java.time.Duration.between(status.getStartTime(), endTime).toMillis();
                 status.setDurationMs(durationMs);
+
+                // Send completion event
+                sendEventToClients(projectId, "test_case_completed", Map.of(
+                    "testCaseId", testCaseId,
+                    "executionId", executionId,
+                    "status", testPassed ? "COMPLETED" : "FAILED",
+                    "endTime", endTime,
+                    "duration", durationMs,
+                    "success", testPassed
+                ));
                 
                 // Update database records
                 try {

@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.project_team09.service.TestSuitesService;
 import com.project_team09.service.TestExecutionService;
@@ -331,5 +332,41 @@ public class TestSuitesController {
             errorResponse.put("message", "Failed to get latest test runs: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
+    }
+
+    /**
+     * Server-Sent Events endpoint for real-time test execution updates
+     */
+    @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamTestEvents(@PathVariable Long projectId) {
+        SseEmitter emitter = new SseEmitter(300000L); // 5 minutes timeout
+        
+        try {
+            // Register this emitter with the test execution service
+            testExecutionService.registerEventStream(projectId, emitter);
+            
+            // Send initial connection confirmation
+            emitter.send(SseEmitter.event()
+                .name("connected")
+                .data("Connected to test execution events for project " + projectId));
+                
+            // Handle completion and cleanup
+            emitter.onCompletion(() -> {
+                testExecutionService.unregisterEventStream(projectId, emitter);
+            });
+            
+            emitter.onTimeout(() -> {
+                testExecutionService.unregisterEventStream(projectId, emitter);
+            });
+            
+            emitter.onError((ex) -> {
+                testExecutionService.unregisterEventStream(projectId, emitter);
+            });
+            
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
+        
+        return emitter;
     }
 } 
