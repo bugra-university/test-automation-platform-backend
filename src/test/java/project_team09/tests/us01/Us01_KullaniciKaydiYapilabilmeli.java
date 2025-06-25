@@ -11,6 +11,7 @@ import project_team09.utilities.Driver;
 import project_team09.utilities.WebDriverManager;
 import project_team09.utilities.ExtentReport;
 import project_team09.utilities.ReusableMethods;
+import project_team09.utilities.StepTracker;
 
 public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
 
@@ -30,67 +31,83 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
             System.out.println("[TC01] WebDriverManager already ready");
         }
 
-        //Web sitesine git ve doğrula
-        System.out.println("[TC01] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
-        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        // Step tracking will be automatically initialized by EnhancedTestListener
+        // Let's execute steps with step tracking
+
+        StepTracker.executeStep("Navigate to AllOverCommerce website", () -> {
+            System.out.println("[TC01] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+            WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+            
+            // Take initial screenshot
+            WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "test_start");
+        });
         
         // Initialize page object AFTER WebDriverManager is ready
         Anasayfa anasayfa = new Anasayfa();
         
-        // Take initial screenshot
-        WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "test_start");
-        
-        softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
-        extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
+        StepTracker.executeStep("Verify website is loaded and Register button is visible", () -> {
+            softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
+            extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
+        });
 
-        //Registera tıkla
-        anasayfa.registerAs.click();
-        ReusableMethods.bekle(3);
-        extentTest.info("Registera tıklandı");
+        StepTracker.executeStep("Click on Register button", () -> {
+            anasayfa.registerAs.click();
+            ReusableMethods.bekle(3);
+            extentTest.info("Registera tıklandı");
+        });
 
-        //username kutusuna bir kullanıcı adı gir
-        anasayfa.usernameAs.sendKeys(faker.name().firstName());
-        extentTest.info("yeni bir username girildi");
+        String username = faker.name().firstName();
+        String email = faker.internet().emailAddress();
+        String password = ConfigReader.getProperty("signInPassword1");
+
+        StepTracker.executeStep("Enter username: " + username, () -> {
+            anasayfa.usernameAs.sendKeys(username);
+            extentTest.info("yeni bir username girildi: " + username);
+        });
+
+        StepTracker.executeStep("Enter email: " + email, () -> {
+            anasayfa.emailAs.sendKeys(email);
+            extentTest.info("yeni bir email girildi: " + email);
+        });
+
+        StepTracker.executeStep("Enter password", () -> {
+            anasayfa.passwordSignUpAs.sendKeys(password);
+            extentTest.info("şifre girildi");
+        });
+
+        StepTracker.executeStep("Agree to privacy policy", () -> {
+            anasayfa.iAgreeButonAs.click();
+            extentTest.info("I agree to the privacy policy kontrol kutusuna tıklandı");
+        });
+
+        StepTracker.executeStep("Click Sign Up button", () -> {
+            anasayfa.signUpYeniKayit.click();
+            extentTest.info("Sign Up butonuna tıklandı");
+            ReusableMethods.bekle(2);
+        });
 
 
-        //email kutusuna kayıtlı olmayan bir mail gir
-        anasayfa.emailAs.sendKeys(faker.internet().emailAddress());
-        extentTest.info("yeni bir email girildi");
-
-        //Şifre kutusuna bir şifre gir
-        anasayfa.passwordSignUpAs.sendKeys(ConfigReader.getProperty("signInPassword1"));
-        extentTest.info("şifre girildi");
-
-        //"I agree to the privacy policy" kontrol kutusuna tıkla
-        anasayfa.iAgreeButonAs.click();
-        extentTest.info("I agree to the privacy policy kontrol kutusuna tıklandı");
-
-        //Sign Up butonuna tıkla
-        anasayfa.signUpYeniKayit.click();
-        extentTest.info("Sign Up butonuna tıklandı");
-
-        ReusableMethods.bekle(2);
-
-
-        //Kayıt işleminin gerçekleştiğini doğrula
-        System.out.println("[TC01] Checking for signOut element...");
-        
-        try {
-            ReusableMethods.bekle(5); // Wait for page to load
-            boolean isSignOutVisible = anasayfa.signOutAs.isDisplayed();
-            System.out.println("[TC01] SignOut element visible: " + isSignOutVisible);
-            softAssert.assertTrue(isSignOutVisible);
-            extentTest.info("Kayıt işleminin gerçekleştiğini doğrulandı");
-        } catch (Exception e) {
-            System.out.println("[TC01] ERROR: Could not find signOut element: " + e.getMessage());
-            extentTest.info("ERROR: SignOut element not found - registration may have failed");
-            // Take screenshot for debugging
-            WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_failed");
-            softAssert.fail("Registration verification failed: " + e.getMessage());
-        }
-        
-        // Take final screenshot
-        WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_success");
+        StepTracker.executeStep("Verify successful registration", () -> {
+            System.out.println("[TC01] Checking for signOut element...");
+            
+            try {
+                ReusableMethods.bekle(5); // Wait for page to load
+                boolean isSignOutVisible = anasayfa.signOutAs.isDisplayed();
+                System.out.println("[TC01] SignOut element visible: " + isSignOutVisible);
+                softAssert.assertTrue(isSignOutVisible);
+                extentTest.info("Kayıt işleminin gerçekleştiğini doğrulandı");
+                
+                // Take final screenshot
+                WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_success");
+            } catch (Exception e) {
+                System.out.println("[TC01] ERROR: Could not find signOut element: " + e.getMessage());
+                extentTest.info("ERROR: SignOut element not found - registration may have failed");
+                // Take screenshot for debugging
+                WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_failed");
+                softAssert.fail("Registration verification failed: " + e.getMessage());
+                throw e; // Re-throw to mark step as failed
+            }
+        });
 
         //sayfayı kapat - WebDriverManager handles cleanup via listeners
         // Driver.closeDriver(); // Removed - let WebDriverManager handle this

@@ -389,7 +389,7 @@ public class ExcelParsingService {
                 testStep.setExpectedResult(getCellStringValue(row.getCell(7)));   // H: Expected Result
                 testStep.setActualResult(getCellStringValue(row.getCell(8)));     // I: Actual Result
                 testStep.setIsHome("Home".equalsIgnoreCase(getCellStringValue(row.getCell(9)))); // J: Home
-                testStep.setStatus("PENDING");
+                testStep.setStatus("pending");
                 testStep.setRowIndex(rowIndex);
                 testStep.setCreatedAt(LocalDateTime.now());
                 

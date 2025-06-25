@@ -117,6 +117,35 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         System.out.println("Method: " + result.getMethod().getMethodName());
         System.out.println("Start Time: " + startTime.format(DateTimeFormatter.ofPattern("HH:mm:ss.SSS")));
         System.out.println("-".repeat(60));
+
+        // Initialize Step Tracking for this test
+        try {
+            Long projectId = getProjectIdFromSystemProperty();
+            Long testCaseId = getTestCaseIdFromSystemProperty();
+            String executionId = getExecutionIdFromSystemProperty();
+            
+            System.out.println("🔍 [StepTracking Debug] System Properties:");
+            System.out.println("  test.projectId = " + System.getProperty("test.projectId"));
+            System.out.println("  test.testCaseDbId = " + System.getProperty("test.testCaseDbId"));
+            System.out.println("  test.executionId = " + System.getProperty("test.executionId"));
+            System.out.println("  Parsed projectId = " + projectId);
+            System.out.println("  Parsed testCaseId = " + testCaseId);
+            System.out.println("  Parsed executionId = " + executionId);
+            
+            if (projectId != null && testCaseId != null && executionId != null) {
+                StepTracker.initializeTracking(projectId, testCaseId, executionId);
+                System.out.println("🎯 Step tracking initialized for test: " + testName);
+            } else {
+                System.out.println("⚠️ Step tracking not initialized - missing system properties");
+                System.out.println("  Missing: " + 
+                    (projectId == null ? "projectId " : "") +
+                    (testCaseId == null ? "testCaseId " : "") +
+                    (executionId == null ? "executionId " : ""));
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Failed to initialize step tracking: " + e.getMessage());
+            e.printStackTrace();
+        }
         
         // Take initial screenshot if driver is ready
         if (WebDriverManager.isDriverReady()) {
@@ -193,6 +222,13 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             }
         }
         
+        // Cleanup step tracking
+        try {
+            StepTracker.cleanup();
+        } catch (Exception e) {
+            System.err.println("❌ Failed to cleanup step tracking: " + e.getMessage());
+        }
+
         cleanupThreadLocals();
     }
     
@@ -222,6 +258,13 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         
         if (result.getThrowable() != null) {
             System.out.println("Reason: " + result.getThrowable().getMessage());
+        }
+
+        // Cleanup step tracking
+        try {
+            StepTracker.cleanup();
+        } catch (Exception e) {
+            System.err.println("❌ Failed to cleanup step tracking: " + e.getMessage());
         }
         
         cleanupThreadLocals();
@@ -355,5 +398,28 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             testName = "UnknownTest_" + Thread.currentThread().getName();
         }
         return WebDriverManager.takeScreenshot(testName, stepDescription);
+    }
+
+    // Helper methods for step tracking system properties
+    private Long getProjectIdFromSystemProperty() {
+        try {
+            String projectIdStr = System.getProperty("test.projectId");
+            return projectIdStr != null ? Long.parseLong(projectIdStr) : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Long getTestCaseIdFromSystemProperty() {
+        try {
+            String testCaseIdStr = System.getProperty("test.testCaseDbId");
+            return testCaseIdStr != null ? Long.parseLong(testCaseIdStr) : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String getExecutionIdFromSystemProperty() {
+        return System.getProperty("test.executionId");
     }
 } 

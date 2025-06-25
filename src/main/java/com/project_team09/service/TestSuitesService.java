@@ -273,10 +273,12 @@ public class TestSuitesService {
         Map<String, Object> stepMap = new HashMap<>();
         stepMap.put("id", testStep.getStepNumber());
         stepMap.put("description", testStep.getDescription());
-        stepMap.put("status", testStep.getStatus() != null ? testStep.getStatus().toLowerCase() : "passed");
+        stepMap.put("status", testStep.getStatus() != null ? testStep.getStatus().toLowerCase() : "pending");
         stepMap.put("testData", testStep.getTestData());
         stepMap.put("expectedResult", testStep.getExpectedResult());
         stepMap.put("actualResult", testStep.getActualResult());
+        stepMap.put("lastRun", null);
+        stepMap.put("duration", null);
         return stepMap;
     }
 } 

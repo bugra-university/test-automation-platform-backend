@@ -12,6 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.project_team09.service.TestSuitesService;
 import com.project_team09.service.TestExecutionService;
+import com.project_team09.service.StepTrackingService;
 
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,9 @@ public class TestSuitesController {
 
     @Autowired
     private TestExecutionService testExecutionService;
+
+    @Autowired
+    private StepTrackingService stepTrackingService;
 
     /**
      * Get all test suites (User Stories with Test Cases) for a project
@@ -368,5 +372,154 @@ public class TestSuitesController {
         }
         
         return emitter;
+    }
+
+    /**
+     * Server-Sent Events endpoint for real-time step execution updates
+     */
+    @GetMapping(value = "/steps/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamStepEvents(@PathVariable Long projectId) {
+        SseEmitter emitter = new SseEmitter(300000L); // 5 minutes timeout
+        
+        try {
+            // Register this emitter with the step tracking service
+            stepTrackingService.registerStepEventStream(projectId, emitter);
+            
+            // Send initial connection confirmation
+            emitter.send(SseEmitter.event()
+                .name("step_connected")
+                .data("Connected to step execution events for project " + projectId));
+                
+            // Handle completion and cleanup
+            emitter.onCompletion(() -> {
+                stepTrackingService.unregisterStepEventStream(projectId, emitter);
+            });
+            
+            emitter.onTimeout(() -> {
+                stepTrackingService.unregisterStepEventStream(projectId, emitter);
+            });
+            
+            emitter.onError((ex) -> {
+                stepTrackingService.unregisterStepEventStream(projectId, emitter);
+            });
+            
+        } catch (Exception e) {
+            emitter.completeWithError(e);
+        }
+        
+        return emitter;
+    }
+
+    /**
+     * Manually trigger step start (for testing/debugging)
+     */
+    @PostMapping("/{testCaseId}/steps/{stepNumber}/start")
+    public ResponseEntity<Map<String, Object>> startStep(
+            @PathVariable Long projectId,
+            @PathVariable Long testCaseId,
+            @PathVariable Integer stepNumber,
+            @RequestBody(required = false) Map<String, Object> stepData) {
+        try {
+            String stepDescription = stepData != null ? 
+                (String) stepData.getOrDefault("stepDescription", "Step " + stepNumber) : 
+                "Step " + stepNumber;
+            String executionId = stepData != null ? 
+                (String) stepData.getOrDefault("executionId", "manual_" + System.currentTimeMillis()) : 
+                "manual_" + System.currentTimeMillis();
+
+            stepTrackingService.startStep(projectId, testCaseId, stepNumber, stepDescription, executionId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Step started successfully");
+            response.put("stepInfo", Map.of(
+                "testCaseId", testCaseId,
+                "stepNumber", stepNumber,
+                "stepDescription", stepDescription,
+                "status", "running",
+                "executionId", executionId
+            ));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to start step: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Manually trigger step completion (for testing/debugging)
+     */
+    @PostMapping("/{testCaseId}/steps/{stepNumber}/complete")
+    public ResponseEntity<Map<String, Object>> completeStep(
+            @PathVariable Long projectId,
+            @PathVariable Long testCaseId,
+            @PathVariable Integer stepNumber,
+            @RequestBody(required = false) Map<String, Object> stepData) {
+        try {
+            String executionId = stepData != null ? 
+                (String) stepData.getOrDefault("executionId", "manual_" + System.currentTimeMillis()) : 
+                "manual_" + System.currentTimeMillis();
+
+            stepTrackingService.completeStep(projectId, testCaseId, stepNumber, executionId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Step completed successfully");
+            response.put("stepInfo", Map.of(
+                "testCaseId", testCaseId,
+                "stepNumber", stepNumber,
+                "status", "passed",
+                "executionId", executionId
+            ));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to complete step: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Manually trigger step failure (for testing/debugging)
+     */
+    @PostMapping("/{testCaseId}/steps/{stepNumber}/fail")
+    public ResponseEntity<Map<String, Object>> failStep(
+            @PathVariable Long projectId,
+            @PathVariable Long testCaseId,
+            @PathVariable Integer stepNumber,
+            @RequestBody(required = false) Map<String, Object> stepData) {
+        try {
+            String errorMessage = stepData != null ? 
+                (String) stepData.getOrDefault("errorMessage", "Step failed") : 
+                "Step failed";
+            String executionId = stepData != null ? 
+                (String) stepData.getOrDefault("executionId", "manual_" + System.currentTimeMillis()) : 
+                "manual_" + System.currentTimeMillis();
+
+            stepTrackingService.failStep(projectId, testCaseId, stepNumber, errorMessage, executionId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Step failed successfully");
+            response.put("stepInfo", Map.of(
+                "testCaseId", testCaseId,
+                "stepNumber", stepNumber,
+                "status", "failed",
+                "errorMessage", errorMessage,
+                "executionId", executionId
+            ));
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to fail step: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 } 

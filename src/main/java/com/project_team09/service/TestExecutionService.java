@@ -39,6 +39,9 @@ public class TestExecutionService {
     @Autowired
     private TestResultRepository testResultRepository;
 
+    @Autowired
+    private StepTrackingService stepTrackingService;
+
     // Track running tests
     private final Map<String, TestExecutionStatus> runningTests = new ConcurrentHashMap<>();
     
@@ -346,20 +349,37 @@ public class TestExecutionService {
                 status.setTestResultId(testResult.getId());
                 System.out.println("[TestExecution] Step 4.1 OK: TestResult created in database with ID = " + testResult.getId());
 
+                // Use the actual database ID from the resolved test case
+                Long actualTestCaseDbId = testCase.getId();
+                System.out.println("[TestExecution] Step 4.2: Using actual DB ID = " + actualTestCaseDbId + " for step tracking");
+
                 // Set system properties for WebDriver configuration
                 System.setProperty("webdriver.headless", String.valueOf(isHeadless));
                 System.setProperty("webdriver.browser", browser.toLowerCase());
                 System.setProperty("test.testCaseId", String.valueOf(testCaseId));
-                System.setProperty("test.testCaseDbId", String.valueOf(testCaseDbId));
+                System.setProperty("test.testCaseDbId", String.valueOf(actualTestCaseDbId));
                 System.setProperty("test.projectId", String.valueOf(projectId));
                 System.setProperty("test.executionId", executionId);
                 System.setProperty("test.userStoryId", testCase.getUserStoryId());
                 System.setProperty("test.methodName", mapTestCaseToMethod(testCase) != null ? mapTestCaseToMethod(testCase) : "unknown");
 
+                // Reset all steps to pending status before starting (use actual DB ID)
+                stepTrackingService.resetStepsForTestCase(actualTestCaseDbId);
+
                 // Configure TestNG for single test case
                 TestNG testng = new TestNG();
                 XmlSuite suite = createSingleTestCaseSuite(testCase);
                 testng.setXmlSuites(Arrays.asList(suite));
+                
+                // Add Enhanced Test Listener for step tracking and screenshots
+                try {
+                    Class<?> listenerClass = Class.forName("project_team09.utilities.EnhancedTestListener");
+                    testng.addListener(listenerClass.newInstance());
+                    System.out.println("[TestExecution] ✅ EnhancedTestListener added to TestNG");
+                } catch (Exception e) {
+                    System.err.println("[TestExecution] ⚠️ Failed to add EnhancedTestListener: " + e.getMessage());
+                    e.printStackTrace();
+                }
                 
                 // Set output directory with execution ID
                 String outputDir = "TestOutput/execution_" + executionId;
