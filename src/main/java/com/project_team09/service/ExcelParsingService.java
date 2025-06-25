@@ -86,7 +86,6 @@ public class ExcelParsingService {
 
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
-        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         String uniqueFilename = UUID.randomUUID().toString() + "_" + originalFilename;
         String filePath = UPLOAD_DIR + uniqueFilename;
 
@@ -278,7 +277,6 @@ public class ExcelParsingService {
         Map<String, TestCase> testCaseMap = new HashMap<>();
         List<TestStep> testSteps = new ArrayList<>();
         
-        int dataRowCount = 0;
         int skippedRowCount = 0;
         
         // Merged cell değerlerini hatırlamak için
@@ -396,7 +394,6 @@ public class ExcelParsingService {
                 testStep.setCreatedAt(LocalDateTime.now());
                 
                 testSteps.add(testStep);
-                dataRowCount++;
                 
                 logger.debug("Added step {} to test case {}: '{}'", stepNumber, testCaseKey, stepDescription);
             }

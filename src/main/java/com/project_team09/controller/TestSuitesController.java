@@ -172,6 +172,13 @@ public class TestSuitesController {
                     throwable.printStackTrace();
                     return null;
                 });
+                
+                // Try to get the testRunId from the future result (this won't block)
+                future.thenAccept(result -> {
+                    if (result != null && result.containsKey("testRunId")) {
+                        System.out.println("[API] ✅ Test execution completed with testRunId: " + result.get("testRunId"));
+                    }
+                });
             }
             
             System.out.println("[API] executeTestCaseAsync called successfully, returning response...");
@@ -180,16 +187,17 @@ public class TestSuitesController {
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Test case execution started");
-            response.put("runResult", Map.of(
-                "testCaseId", testCaseId,
-                "status", "started",
-                "startTime", java.time.LocalDateTime.now(),
-                "configuration", Map.of(
-                    "isHeadless", isHeadless,
-                    "browser", browser
-                ),
-                "async", true
+            Map<String, Object> runResult = new HashMap<>();
+            runResult.put("testCaseId", testCaseId);
+            runResult.put("status", "started");
+            runResult.put("startTime", java.time.LocalDateTime.now());
+            runResult.put("configuration", Map.of(
+                "isHeadless", isHeadless,
+                "browser", browser
             ));
+            runResult.put("async", true);
+            runResult.put("pollHint", "Check latest test runs for this project to get testRunId for polling");
+            response.put("runResult", runResult);
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -280,6 +288,48 @@ public class TestSuitesController {
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * Get test run status from database by test run ID
+     */
+    @GetMapping("/test-runs/{testRunId}/status")
+    public ResponseEntity<Map<String, Object>> getTestRunStatus(
+            @PathVariable Long projectId,
+            @PathVariable Long testRunId) {
+        try {
+            Map<String, Object> status = testExecutionService.getTestRunStatus(testRunId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("testRunStatus", status);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to get test run status: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
+     * Get latest test runs for a project (for polling)
+     */
+    @GetMapping("/test-runs/latest")
+    public ResponseEntity<Map<String, Object>> getLatestTestRuns(@PathVariable Long projectId) {
+        try {
+            // Get latest 10 test runs for this project
+            List<Map<String, Object>> latestRuns = testExecutionService.getLatestTestRuns(projectId, 10);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("testRuns", latestRuns);
+            response.put("count", latestRuns.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Failed to get latest test runs: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 } 

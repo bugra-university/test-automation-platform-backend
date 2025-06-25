@@ -2,6 +2,7 @@ package com.project_team09.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.testng.TestNG;
 import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlTest;
@@ -9,7 +10,11 @@ import org.testng.xml.XmlClass;
 import org.testng.xml.XmlInclude;
 
 import com.project_team09.model.TestCase;
+import com.project_team09.model.TestRun;
+import com.project_team09.model.TestResult;
 import com.project_team09.repository.TestCaseRepository;
+import com.project_team09.repository.TestRunRepository;
+import com.project_team09.repository.TestResultRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,6 +30,12 @@ public class TestExecutionService {
     @Autowired
     private TestCaseRepository testCaseRepository;
 
+    @Autowired
+    private TestRunRepository testRunRepository;
+
+    @Autowired
+    private TestResultRepository testResultRepository;
+
     // Track running tests
     private final Map<String, TestExecutionStatus> runningTests = new ConcurrentHashMap<>();
 
@@ -35,6 +46,10 @@ public class TestExecutionService {
         private String testOutput;
         private boolean isHeadless;
         private String browser;
+        private Long testRunId; // Database ID
+        private Long testResultId; // Database ID
+        private String errorMessage;
+        private Long durationMs;
 
         // Getters and setters
         public String getStatus() { return status; }
@@ -54,6 +69,18 @@ public class TestExecutionService {
         
         public String getBrowser() { return browser; }
         public void setBrowser(String browser) { this.browser = browser; }
+
+        public Long getTestRunId() { return testRunId; }
+        public void setTestRunId(Long testRunId) { this.testRunId = testRunId; }
+
+        public Long getTestResultId() { return testResultId; }
+        public void setTestResultId(Long testResultId) { this.testResultId = testResultId; }
+
+        public String getErrorMessage() { return errorMessage; }
+        public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+
+        public Long getDurationMs() { return durationMs; }
+        public void setDurationMs(Long durationMs) { this.durationMs = durationMs; }
     }
 
     /**
@@ -166,6 +193,19 @@ public class TestExecutionService {
                 runningTests.put(executionId, status);
                 System.out.println("[TestExecution] Step 1 OK: Status created");
 
+                // Create TestRun database record
+                TestRun testRun = new TestRun(projectId, "Test Case: " + testCaseId, "RUNNING");
+                testRun.setTriggeredBy("manual");
+                testRun.setEnvironment("test");
+                Map<String, Object> parameters = new HashMap<>();
+                parameters.put("testCaseId", testCaseId);
+                parameters.put("browser", browser);
+                parameters.put("headless", isHeadless);
+                testRun.setParameters(parameters);
+                testRun = testRunRepository.save(testRun);
+                status.setTestRunId(testRun.getId());
+                System.out.println("[TestExecution] Step 1.1 OK: TestRun created in database with ID = " + testRun.getId());
+
                 System.out.println("[TestExecution] Step 2: Parsing test case ID '" + testCaseId + "'...");
                 // Get specific test case by parsing the ID
                 Long testCaseDbId;
@@ -220,6 +260,13 @@ public class TestExecutionService {
                 }
 
                 TestCase testCase = testCaseOpt.get();
+                System.out.println("[TestExecution] Step 4 OK: Test case found - " + testCase.getTestCaseId());
+
+                // Create TestResult database record
+                TestResult testResult = new TestResult(testRun.getId(), testCase.getId(), "RUNNING");
+                testResult = testResultRepository.save(testResult);
+                status.setTestResultId(testResult.getId());
+                System.out.println("[TestExecution] Step 4.1 OK: TestResult created in database with ID = " + testResult.getId());
 
                 // Set system properties for WebDriver configuration
                 System.setProperty("webdriver.headless", String.valueOf(isHeadless));
@@ -267,6 +314,7 @@ public class TestExecutionService {
                 System.out.println("[TestExecution] TestNG execution completed.");
                 
                 // Check TestNG execution results
+                boolean testPassed = !testng.hasFailure();
                 if (testng.hasFailure()) {
                     System.out.println("[TestExecution] ❌ TestNG reported failures");
                     status.setStatus("FAILED");
@@ -276,8 +324,40 @@ public class TestExecutionService {
                 }
                 
                 // Update status - listeners will provide detailed results
-                status.setEndTime(LocalDateTime.now());
+                LocalDateTime endTime = LocalDateTime.now();
+                status.setEndTime(endTime);
                 status.setTestOutput("Test case execution completed. Output: " + outputDir);
+                
+                // Calculate duration
+                long durationMs = java.time.Duration.between(status.getStartTime(), endTime).toMillis();
+                status.setDurationMs(durationMs);
+                
+                // Update database records
+                try {
+                    // Update TestRun
+                    TestRun updatedTestRun = testRunRepository.findById(status.getTestRunId()).orElse(null);
+                    if (updatedTestRun != null) {
+                        updatedTestRun.setStatus(testPassed ? "COMPLETED" : "FAILED");
+                        updatedTestRun.setEndTime(endTime);
+                        testRunRepository.save(updatedTestRun);
+                        System.out.println("[TestExecution] ✅ TestRun updated in database");
+                    }
+                    
+                    // Update TestResult
+                    TestResult updatedTestResult = testResultRepository.findById(status.getTestResultId()).orElse(null);
+                    if (updatedTestResult != null) {
+                        updatedTestResult.markAsCompleted(testPassed);
+                        if (!testPassed) {
+                            updatedTestResult.setErrorMessage("Test execution failed - check TestNG output");
+                        }
+                        testResultRepository.save(updatedTestResult);
+                        System.out.println("[TestExecution] ✅ TestResult updated in database - Status: " + 
+                            (testPassed ? "PASS" : "FAIL"));
+                    }
+                } catch (Exception dbError) {
+                    System.err.println("[TestExecution] ⚠️ Database update failed: " + dbError.getMessage());
+                    dbError.printStackTrace();
+                }
                 
                 System.out.println("[TestExecution] Completed: " + testCaseId);
                 
@@ -299,8 +379,34 @@ public class TestExecutionService {
                 TestExecutionStatus status = runningTests.get(executionId);
                 if (status != null) {
                     status.setStatus("FAILED");
-                    status.setEndTime(LocalDateTime.now());
+                    LocalDateTime errorEndTime = LocalDateTime.now();
+                    status.setEndTime(errorEndTime);
                     status.setTestOutput("Execution failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+                    status.setErrorMessage(e.getMessage());
+                    
+                    // Update database records for error case
+                    try {
+                        if (status.getTestRunId() != null) {
+                            TestRun errorTestRun = testRunRepository.findById(status.getTestRunId()).orElse(null);
+                            if (errorTestRun != null) {
+                                errorTestRun.setStatus("FAILED");
+                                errorTestRun.setEndTime(errorEndTime);
+                                testRunRepository.save(errorTestRun);
+                                System.out.println("[TestExecution] ❌ TestRun marked as FAILED in database");
+                            }
+                        }
+                        
+                        if (status.getTestResultId() != null) {
+                            TestResult errorTestResult = testResultRepository.findById(status.getTestResultId()).orElse(null);
+                            if (errorTestResult != null) {
+                                errorTestResult.markAsCompleted(false, e.getMessage(), e.getStackTrace()[0].toString());
+                                testResultRepository.save(errorTestResult);
+                                System.out.println("[TestExecution] ❌ TestResult marked as FAILED in database");
+                            }
+                        }
+                    } catch (Exception dbError) {
+                        System.err.println("[TestExecution] ⚠️ Error updating database during failure handling: " + dbError.getMessage());
+                    }
                 }
                 
                 return createExecutionResult(executionId, status, "Test case execution failed: " + e.getMessage());
@@ -329,12 +435,98 @@ public class TestExecutionService {
         result.put("startTime", status.getStartTime());
         result.put("endTime", status.getEndTime());
         result.put("output", status.getTestOutput());
+        result.put("durationMs", status.getDurationMs());
+        result.put("errorMessage", status.getErrorMessage());
+        
+        // Add database IDs for reference
+        result.put("testRunId", status.getTestRunId());
+        result.put("testResultId", status.getTestResultId());
+        
         result.put("configuration", Map.of(
             "isHeadless", status.isHeadless(),
             "browser", status.getBrowser()
         ));
 
         return result;
+    }
+
+    /**
+     * Get test run status from database by test run ID
+     */
+    public Map<String, Object> getTestRunStatus(Long testRunId) {
+        Optional<TestRun> testRunOpt = testRunRepository.findById(testRunId);
+        if (!testRunOpt.isPresent()) {
+            Map<String, Object> result = new HashMap<>();
+            result.put("found", false);
+            result.put("message", "Test run not found");
+            return result;
+        }
+
+        TestRun testRun = testRunOpt.get();
+        Map<String, Object> result = new HashMap<>();
+        result.put("found", true);
+        result.put("id", testRun.getId());
+        result.put("status", testRun.getStatus());
+        result.put("name", testRun.getName());
+        result.put("startTime", testRun.getStartTime());
+        result.put("endTime", testRun.getEndTime());
+        result.put("durationMs", testRun.getDurationMs());
+        result.put("triggeredBy", testRun.getTriggeredBy());
+        result.put("environment", testRun.getEnvironment());
+        result.put("parameters", testRun.getParameters());
+
+        // Get test results for this run
+        List<TestResult> testResults = testResultRepository.findByTestRunIdOrderByCreatedAtDesc(testRunId);
+        result.put("testResults", testResults.stream().map(tr -> {
+            Map<String, Object> trMap = new HashMap<>();
+            trMap.put("id", tr.getId());
+            trMap.put("testCaseId", tr.getTestCaseId());
+            trMap.put("status", tr.getStatus());
+            trMap.put("startTime", tr.getStartTime());
+            trMap.put("endTime", tr.getEndTime());
+            trMap.put("durationMs", tr.getDurationMs());
+            trMap.put("errorMessage", tr.getErrorMessage());
+            return trMap;
+        }).collect(java.util.stream.Collectors.toList()));
+
+        return result;
+    }
+
+    /**
+     * Get latest test runs for a project (for polling)
+     */
+    public List<Map<String, Object>> getLatestTestRuns(Long projectId, int limit) {
+        List<TestRun> testRuns = testRunRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        
+        return testRuns.stream()
+            .limit(limit)
+            .map(testRun -> {
+                Map<String, Object> runMap = new HashMap<>();
+                runMap.put("id", testRun.getId());
+                runMap.put("name", testRun.getName());
+                runMap.put("status", testRun.getStatus());
+                runMap.put("startTime", testRun.getStartTime());
+                runMap.put("endTime", testRun.getEndTime());
+                runMap.put("durationMs", testRun.getDurationMs());
+                runMap.put("triggeredBy", testRun.getTriggeredBy());
+                runMap.put("parameters", testRun.getParameters());
+                runMap.put("createdAt", testRun.getCreatedAt());
+                
+                // Get test results for this run
+                List<TestResult> testResults = testResultRepository.findByTestRunIdOrderByCreatedAtDesc(testRun.getId());
+                runMap.put("testResults", testResults.stream().map(tr -> {
+                    Map<String, Object> resultMap = new HashMap<>();
+                    resultMap.put("id", tr.getId());
+                    resultMap.put("testCaseId", tr.getTestCaseId());
+                    resultMap.put("status", tr.getStatus());
+                    resultMap.put("durationMs", tr.getDurationMs());
+                    resultMap.put("errorMessage", tr.getErrorMessage());
+                    return resultMap;
+                }).collect(java.util.stream.Collectors.toList()));
+                
+                return runMap;
+            })
+            .collect(java.util.stream.Collectors.toList());
     }
 
     // Helper methods
@@ -349,6 +541,8 @@ public class TestExecutionService {
         result.put("startTime", status.getStartTime());
         result.put("endTime", status.getEndTime());
         result.put("message", message);
+        result.put("testRunId", status.getTestRunId()); // Database ID for polling
+        result.put("testResultId", status.getTestResultId()); // Database ID for reference
         result.put("configuration", Map.of(
             "isHeadless", status.isHeadless(),
             "browser", status.getBrowser()

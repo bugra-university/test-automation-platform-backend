@@ -3,6 +3,7 @@ package project_team09.tests.us01;
 
 import com.github.javafaker.Faker;
 import org.testng.annotations.Test;
+import org.testng.annotations.AfterMethod;
 import org.testng.asserts.SoftAssert;
 import project_team09.pages.Us01Us02Us03.Anasayfa;
 import project_team09.utilities.ConfigReader;
@@ -72,9 +73,21 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
 
 
         //Kayıt işleminin gerçekleştiğini doğrula
-
-        softAssert.assertTrue(anasayfa.signOutAs.isDisplayed());
-        extentTest.info("Kayıt işleminin gerçekleştiğini doğrulandı");
+        System.out.println("[TC01] Checking for signOut element...");
+        
+        try {
+            ReusableMethods.bekle(5); // Wait for page to load
+            boolean isSignOutVisible = anasayfa.signOutAs.isDisplayed();
+            System.out.println("[TC01] SignOut element visible: " + isSignOutVisible);
+            softAssert.assertTrue(isSignOutVisible);
+            extentTest.info("Kayıt işleminin gerçekleştiğini doğrulandı");
+        } catch (Exception e) {
+            System.out.println("[TC01] ERROR: Could not find signOut element: " + e.getMessage());
+            extentTest.info("ERROR: SignOut element not found - registration may have failed");
+            // Take screenshot for debugging
+            WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_failed");
+            softAssert.fail("Registration verification failed: " + e.getMessage());
+        }
         
         // Take final screenshot
         WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_success");
@@ -732,5 +745,15 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("sayfa kapatıldı");
 
 
+    }
+
+    @AfterMethod
+    public void tearDown() {
+        // Clean up WebDriverManager after each test method
+        if (WebDriverManager.isDriverReady()) {
+            System.out.println("[AfterMethod] Closing browser...");
+            WebDriverManager.quitDriver();
+            System.out.println("[AfterMethod] Browser closed successfully");
+        }
     }
 }
