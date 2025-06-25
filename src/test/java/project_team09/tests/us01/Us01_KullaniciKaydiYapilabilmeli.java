@@ -105,13 +105,21 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
 
     @Test
     public void tc02_withoutUsernameNotRegister() {
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","username alanı boş bırakıldığında kayıt işlemi gerçekleşmemeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01)
+        System.out.println("[TC02] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC02] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC02] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -148,21 +156,29 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         softAssert.assertAll();
 
 
-        //Sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
 
     }
 
     @Test
     public void tc03_withoutEmailNotRegister() {
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","email alanı boş bırakıldığında kayıt işlemi gerçekleşmemeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01, TC02)
+        System.out.println("[TC03] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC03] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC03] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -200,23 +216,30 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Siteye kayıt yapılamadığı doğrulandı");
         softAssert.assertAll();
 
-        //sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
+        //sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
 
 
     }
 
     @Test
     public void tc04_withoutPasswordNotRegister() {
-
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","password alanı boş bırakıldığında kayıt işlemi gerçekleşmemeli test edilidi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01, TC02, TC03)
+        System.out.println("[TC04] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC04] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC04] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -251,24 +274,29 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Siteye kayıt yapılamadığı doğrulandı");
         softAssert.assertAll();
 
-        //sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
+        //sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
 
     @Test
     public void tc05_WithoutIagreeClickNotRegister() {
-
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı", "I agree to the privacy policy\" kontrol kutusuna tıklanmadığında SignUp işlemi gerçekleşmemeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC04)
+        System.out.println("[TC05] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC05] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC05] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -289,11 +317,8 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         anasayfa.passwordSignUpAs.sendKeys("signInPassword1");
         extentTest.info("şifre girildi");
 
-
         //"I agree to the privacy policy" kontrol kutusuna tıklama
         extentTest.info("I agree to the privacy policy kontrol kutusuna tıklanmadı");
-
-
 
         //Sign Up butonuna tıkla
         anasayfa.signUpYeniKayit.click();
@@ -306,25 +331,29 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Siteye kayıt yapılamadığı doğrulandı");
         softAssert.assertAll();
 
-
-        //Sayfayı kapat
-
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
 
     @Test
     public void tc06_hataliemailileKayitOlma() {
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı", "Email alanına @ sembolü eklenmeden girilen mail ile kayıt işlemi gerçekleşmemeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC05)
+        System.out.println("[TC06] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC06] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC06] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -341,11 +370,9 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         anasayfa.emailAs.sendKeys(ConfigReader.getProperty("hataliEmail1"));
         extentTest.info("@ işareti olmadan email girildi");
 
-
         //Password kutusuna bir şifre gir
         anasayfa.passwordSignUpAs.sendKeys("signInPassword1");
         extentTest.info("şifre girildi");
-
 
         //"I agree to the privacy policy" kontrol kutusuna tıkla
         anasayfa.iAgreeButonAs.click();
@@ -362,26 +389,29 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Siteye kayıt yapılamadığı doğrulandı");
         softAssert.assertAll();
 
-
-        //Sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
-
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
 
     @Test
     public void tc07_withoutComEmailIleKayitOlma() {
-
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("kullanıcı kaydı","Email alanına .com eklenmeden kayıt işlemi gerçekleşmemeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC06)
+        System.out.println("[TC07] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC07] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC07] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -402,7 +432,6 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         anasayfa.passwordSignUpAs.sendKeys("signInPassword1");
         extentTest.info("şifre girildi");
 
-
         //"I agree to the privacy policy" kontrol kutusuna tıkla
         anasayfa.iAgreeButonAs.click();
         extentTest.info("I agree to the privacy policy kontrol kutusuna tıklandı");
@@ -418,26 +447,29 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Siteye kayıt yapılamadığı doğrulandı");
         softAssert.assertAll();
 
-        //Sayfayı kapat
-
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
-
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
 
     @Test
     public void tc08_sekizChrctrPasswordkayit() {
-
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","Password alanına 8 karakterli bir şifre girilerek kayıt olunabilmeli");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC07)
+        System.out.println("[TC08] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC08] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC08] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -469,26 +501,33 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Sign Up butonuna tıklandı");
 
         //Kayıt işleminin gerçekleştiğini doğrula
-
+        ReusableMethods.bekle(5); // Wait for page to load
         softAssert.assertTrue(anasayfa.signOutAs.isDisplayed());
         extentTest.info("Siteye kayıt yapıldığı doğrulandı");
+        softAssert.assertAll();
 
-        //Sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
     @Test
     public void tc09_dokuzChrctrPasswordkayit() {
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","Password alanına 9 karakterli bir şifre girilerek kayıt olunabilmeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC08)
+        System.out.println("[TC09] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC09] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC09] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -520,27 +559,34 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Sign Up butonuna tıklandı");
 
         //Kayıt işleminin gerçekleştiğini doğrula
-
+        ReusableMethods.bekle(5); // Wait for page to load
         softAssert.assertTrue(anasayfa.signOutAs.isDisplayed());
         extentTest.info("Siteye kayıt yapıldığı doğrulandı");
+        softAssert.assertAll();
 
-        //Sayfayı kapat
-
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
 
     @Test
     public void tc10_yediChrctrPasswordkayitOlma() {
-
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","Password alanına 7 karakterli bir şifre girilerek kayıt olunamamalı test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC09)
+        System.out.println("[TC10] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC10] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC10] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -579,21 +625,29 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("hatalı bilgiler ile kayıt yapıldı");
         softAssert.assertAll();
 
-        //Sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
 
     @Test
     public void tc11_passwordSadeceRakamlaKayitOlma() {
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","Password alanına sadece rakamlardan oluşan bir şifre girilerek kayıt olunamamalı test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC10)
+        System.out.println("[TC11] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC11] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC11] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -631,22 +685,28 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("hatalı bilgilerle kayıt yapıldı");
         softAssert.assertAll();
 
-        //Sayfayı kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
+        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
     @Test
     public void tc12_buyukkucukHarfRakamUsernameKayit() {
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","username alanına büyük harf, küçük harf ve rakam girilerek kayıt olunabilmeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC11)
+        System.out.println("[TC12] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC12] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC12] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -681,28 +741,34 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
 
 
         //Kayıt işleminin gerçekleştiğini doğrula
-
+        ReusableMethods.bekle(5); // Wait for page to load
         softAssert.assertTrue(anasayfa.signOutAs.isDisplayed());
         extentTest.info("Siteye kayıt yapıldığı doğrulandı");
+        softAssert.assertAll();
 
-        //Sayfayi kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
+        //Sayfayi kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
 
     @Test
     public void tc13_usernameOzelkarakterKayit() {
-
-        Anasayfa anasayfa = new Anasayfa();
         Faker faker = new Faker();
         SoftAssert softAssert = new SoftAssert();
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","username alanına özel karakter girilerek kayıt olunabilmeli test edildi");
 
+        // Initialize WebDriver with WebDriverManager (like TC01-TC12)
+        System.out.println("[TC13] Initializing WebDriverManager...");
+        WebDriverManager.initializeDriver();
+        System.out.println("[TC13] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+
         //Web sitesine git ve doğrula
-        Driver.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        System.out.println("[TC13] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+        
+        // Initialize page object AFTER WebDriverManager is ready
+        Anasayfa anasayfa = new Anasayfa();
         softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
         extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
@@ -735,25 +801,28 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("Sign Up butonuna tıklandı");
 
         //Kayıt işleminin gerçekleştiğini doğrula
+        ReusableMethods.bekle(5); // Wait for page to load
         ReusableMethods.tumSayfaResmi("us01tc13kayit");
         softAssert.assertTrue(anasayfa.signOutAs.isDisplayed());
         extentTest.info("Kayıt işleminin gerçekleştiğini doğrulanmak istendi fakat hata bulundu");
         softAssert.assertAll();
 
-        //Sayfayi kapat
-        Driver.closeDriver();
-        extentTest.info("sayfa kapatıldı");
-
-
+        //Sayfayi kapat - WebDriverManager handles cleanup via @AfterMethod
+        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
+        extentTest.info("test completed successfully");
     }
 
     @AfterMethod
     public void tearDown() {
-        // Clean up WebDriverManager after each test method
+        System.out.println("[AfterMethod] Cleaning up browser...");
+        
+        // Only clean up WebDriverManager (since all tests now use it)
         if (WebDriverManager.isDriverReady()) {
             System.out.println("[AfterMethod] Closing browser...");
             WebDriverManager.quitDriver();
             System.out.println("[AfterMethod] Browser closed successfully");
+        } else {
+            System.out.println("[AfterMethod] No browser to close");
         }
     }
 }
