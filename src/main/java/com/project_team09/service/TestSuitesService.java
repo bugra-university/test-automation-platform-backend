@@ -6,9 +6,11 @@ import org.springframework.stereotype.Service;
 import com.project_team09.model.ProductBacklogItem;
 import com.project_team09.model.TestCase;
 import com.project_team09.model.TestStep;
+import com.project_team09.model.TestResult;
 import com.project_team09.repository.ProductBacklogItemRepository;
 import com.project_team09.repository.TestCaseRepository;
 import com.project_team09.repository.TestStepRepository;
+import com.project_team09.repository.TestResultRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -25,6 +27,9 @@ public class TestSuitesService {
 
     @Autowired
     private TestStepRepository testStepRepository;
+
+    @Autowired
+    private TestResultRepository testResultRepository;
 
     /**
      * Get all test suites (User Stories with Test Cases) for a project
@@ -249,20 +254,66 @@ public class TestSuitesService {
         testCaseMap.put("stepCount", stepCount);
         testCaseMap.put("isComplete", hasSteps);
         
-        // Calculate status based on actual test results (default to not_run)
-        testCaseMap.put("status", "not_run");
-        testCaseMap.put("progress", Map.of("completed", 0, "total", stepCount));
-        testCaseMap.put("lastRun", null);
-        testCaseMap.put("duration", null);
+        // Get latest test result for this test case
+        List<TestResult> testResults = testResultRepository.findByTestCaseIdOrderByCreatedAtDesc(testCase.getId());
+        TestResult latestResult = testResults.isEmpty() ? null : testResults.get(0);
+        
+        if (latestResult != null) {
+            // Set status based on latest test result
+            String resultStatus = latestResult.getStatus();
+            if ("PASS".equals(resultStatus)) {
+                testCaseMap.put("status", "passed");
+            } else if ("FAIL".equals(resultStatus)) {
+                testCaseMap.put("status", "failed");
+            } else if ("RUNNING".equals(resultStatus)) {
+                testCaseMap.put("status", "running");
+            } else {
+                testCaseMap.put("status", "not_run");
+            }
+            
+            // Set last run time
+            testCaseMap.put("lastRun", latestResult.getStartTime());
+            
+            // Set duration
+            if (latestResult.getDurationMs() != null) {
+                testCaseMap.put("duration", latestResult.getDurationMs());
+            } else {
+                testCaseMap.put("duration", null);
+            }
+        } else {
+            // No test results yet
+            testCaseMap.put("status", "not_run");
+            testCaseMap.put("lastRun", null);
+            testCaseMap.put("duration", null);
+        }
         
         // Get steps if they exist
         if (hasSteps) {
             List<TestStep> steps = testStepRepository.findByTestCaseIdOrderByStepNumber(testCase.getId());
+            
+            // Count completed steps (PASS status) - check for different possible status values
+            int completedSteps = (int) steps.stream()
+                .filter(step -> {
+                    String status = step.getStatus();
+                    return status != null && (
+                        "PASS".equalsIgnoreCase(status) || 
+                        "PASSED".equalsIgnoreCase(status) ||
+                        "passed".equals(status)
+                    );
+                })
+                .count();
+            
+            System.out.println("[TestSuites] Test Case " + testCase.getTestCaseId() + 
+                " - Step Progress: " + completedSteps + "/" + stepCount);
+            
+            testCaseMap.put("progress", Map.of("completed", completedSteps, "total", stepCount));
+            
             List<Map<String, Object>> stepMaps = steps.stream()
-                .map(this::convertTestStepToMap)
+                .map(step -> convertTestStepToMap(step, steps.size()))
                 .collect(Collectors.toList());
             testCaseMap.put("steps", stepMaps);
         } else {
+            testCaseMap.put("progress", Map.of("completed", 0, "total", stepCount));
             testCaseMap.put("steps", new ArrayList<>());
         }
         
@@ -279,6 +330,16 @@ public class TestSuitesService {
         stepMap.put("actualResult", testStep.getActualResult());
         stepMap.put("lastRun", null);
         stepMap.put("duration", null);
+        return stepMap;
+    }
+
+    private Map<String, Object> convertTestStepToMap(TestStep testStep, int totalSteps) {
+        Map<String, Object> stepMap = convertTestStepToMap(testStep);
+        
+        // Add step progress (current step / total steps)
+        stepMap.put("stepNumber", testStep.getStepNumber());
+        stepMap.put("progress", testStep.getStepNumber() + "/" + totalSteps);
+        
         return stepMap;
     }
 } 
