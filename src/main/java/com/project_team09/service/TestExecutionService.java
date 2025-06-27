@@ -13,9 +13,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.project_team09.model.TestCase;
 import com.project_team09.model.TestRun;
 import com.project_team09.model.TestResult;
+import com.project_team09.model.TestExecutionMetadata;
 import com.project_team09.repository.TestCaseRepository;
 import com.project_team09.repository.TestRunRepository;
 import com.project_team09.repository.TestResultRepository;
+import com.project_team09.repository.TestExecutionMetadataRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -38,6 +40,9 @@ public class TestExecutionService {
 
     @Autowired
     private TestResultRepository testResultRepository;
+
+    @Autowired
+    private TestExecutionMetadataRepository testExecutionMetadataRepository;
 
     @Autowired
     private StepTrackingService stepTrackingService;
@@ -122,18 +127,22 @@ public class TestExecutionService {
     private void sendEventToClients(Long projectId, String eventName, Object data) {
         CopyOnWriteArrayList<SseEmitter> emitters = projectEventStreams.get(projectId);
         if (emitters != null && !emitters.isEmpty()) {
-            System.out.println("[SSE] Sending event '" + eventName + "' to " + emitters.size() + " clients");
+            System.out.println("[SSE] ✅ Sending event '" + eventName + "' to " + emitters.size() + " clients for project " + projectId);
             
             for (SseEmitter emitter : new CopyOnWriteArrayList<>(emitters)) {
                 try {
                     emitter.send(SseEmitter.event()
                         .name(eventName)
                         .data(data));
+                    System.out.println("[SSE] ✅ Event '" + eventName + "' sent successfully to client");
                 } catch (IOException e) {
-                    System.out.println("[SSE] Failed to send event to client, removing emitter: " + e.getMessage());
+                    System.out.println("[SSE] ❌ Failed to send event to client, removing emitter: " + e.getMessage());
                     emitters.remove(emitter);
                 }
             }
+        } else {
+            System.out.println("[SSE] ⚠️ No connected clients for project " + projectId + " to send event '" + eventName + "'");
+            System.out.println("[SSE] ⚠️ Total registered projects: " + projectEventStreams.keySet());
         }
     }
 
@@ -220,6 +229,20 @@ public class TestExecutionService {
                     return createExecutionResult(executionId, status, "No test cases found");
                 }
 
+                // Save test execution metadata for each test case
+                System.out.println("[TestExecution] Saving execution metadata for " + testCases.size() + " test cases");
+                for (TestCase testCase : testCases) {
+                    TestExecutionMetadata metadata = new TestExecutionMetadata(
+                        projectId, 
+                        userStoryId, 
+                        testCase.getTestCaseId(), 
+                        status.getStartTime()
+                    );
+                    metadata.setStatus("RUNNING");
+                    testExecutionMetadataRepository.save(metadata);
+                    System.out.println("[TestExecution] Saved metadata: " + testCase.getTestCaseId() + " for execution at " + status.getStartTime());
+                }
+
                 // Configure TestNG
                 TestNG testng = new TestNG();
                 
@@ -249,6 +272,43 @@ public class TestExecutionService {
                 status.setStatus("COMPLETED");
                 status.setEndTime(LocalDateTime.now());
                 status.setTestOutput("Test execution completed. Output: " + outputDir);
+                
+                // Update test execution metadata with completion status and report paths
+                System.out.println("[TestExecution] Updating execution metadata for completion");
+                for (TestCase testCase : testCases) {
+                    List<TestExecutionMetadata> metadataList = testExecutionMetadataRepository.findByProjectIdAndExecutionTimeBetween(
+                        projectId, 
+                        status.getStartTime().minusMinutes(5), 
+                        status.getStartTime().plusMinutes(5)
+                    );
+                    
+                    for (TestExecutionMetadata metadata : metadataList) {
+                        if (metadata.getTestCaseId().equals(testCase.getTestCaseId())) {
+                            metadata.setStatus("COMPLETED");
+                            
+                            // Set report file path to the reports directory (where actual HTML files are stored)
+                            String reportsDir = "TestOutput/reports";
+                            metadata.setReportFilePath(reportsDir);
+                            
+                            // Also set a pattern for the report file name based on execution time
+                            LocalDateTime execTime = metadata.getExecutionTime();
+                            String timePattern = String.format("%02d_%02d_%02d_%02d%02d%04d", 
+                                execTime.getHour(), 
+                                execTime.getMinute(), 
+                                execTime.getSecond(),
+                                execTime.getDayOfMonth(),
+                                execTime.getMonthValue(),
+                                execTime.getYear()
+                            );
+                            metadata.setReportFileName("extentReport__" + timePattern + ".html");
+                            
+                            testExecutionMetadataRepository.save(metadata);
+                            System.out.println("[TestExecution] Updated metadata: " + testCase.getTestCaseId() + " -> COMPLETED");
+                            System.out.println("[TestExecution] Report path: " + reportsDir + "/" + metadata.getReportFileName());
+                            break;
+                        }
+                    }
+                }
                 
                 // Send completion event
                 sendEventToClients(projectId, "test_suite_completed", Map.of(

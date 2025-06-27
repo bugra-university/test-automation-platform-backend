@@ -62,3 +62,22 @@ CREATE TABLE screenshots (
 
 -- Ekran görüntüleri için indeksler  
 CREATE INDEX idx_screenshot_test_result_id ON screenshots (test_result_id);
+
+-- Test Execution Metadata tablosu - Hangi test case'in çalıştığını takip etmek için
+CREATE TABLE test_execution_metadata (
+    id BIGSERIAL PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    user_story_id VARCHAR(10) NOT NULL,
+    test_case_id VARCHAR(10) NOT NULL,
+    execution_time TIMESTAMP NOT NULL,
+    report_file_name VARCHAR(255),
+    report_file_path VARCHAR(500),
+    status VARCHAR(20) DEFAULT 'RUNNING',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+-- Test execution metadata için indeksler
+CREATE INDEX idx_test_execution_project_id ON test_execution_metadata (project_id);
+CREATE INDEX idx_test_execution_time ON test_execution_metadata (execution_time);
+CREATE INDEX idx_test_execution_report_file ON test_execution_metadata (report_file_name);

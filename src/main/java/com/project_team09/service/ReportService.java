@@ -1,6 +1,11 @@
 package com.project_team09.service;
 
 import com.project_team09.model.TestReport;
+import com.project_team09.model.TestCase;
+import com.project_team09.model.TestExecutionMetadata;
+import com.project_team09.repository.TestCaseRepository;
+import com.project_team09.repository.TestExecutionMetadataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -19,6 +24,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class ReportService {
+    
+    @Autowired
+    private TestCaseRepository testCaseRepository;
+    
+    @Autowired
+    private TestExecutionMetadataRepository testExecutionMetadataRepository;
     
     private static final String REPORTS_DIR = "TestOutput/reports";
     private static final String EXECUTION_DIR = "TestOutput";
@@ -81,7 +92,7 @@ public class ReportService {
         
         // Map to user story format
         String title = mapToUserStory(testName);
-        String testCase = extractTestCase(content, testName);
+        String testCase = extractTestCase(content, testName, filePath);
         
         TestReport report = new TestReport();
         report.setId(id);
@@ -241,11 +252,223 @@ public class ReportService {
     }
     
     /**
-     * Extract test case description
+     * Extract test case description from HTML content using execution metadata
      */
-    private String extractTestCase(String content, String testName) {
-        // This is a simplified version - you could enhance this to extract actual test case descriptions
+    private String extractTestCase(String content, String testName, Path filePath) {
+        // First try to extract test case from execution metadata (NEW APPROACH)
+        String testCaseId = extractTestCaseFromMetadata(content, testName, filePath);
+        if (testCaseId != null) {
+            System.out.println("[ReportService] Found test case from metadata: " + testCaseId);
+            return testCaseId + ": " + testName + " test case execution";
+        }
+        
+        // Fallback: try to extract test case ID from test name or content (OLD APPROACH)
+        testCaseId = extractTestCaseId(content, testName);
+        if (testCaseId != null && !testCaseId.equals("TC01")) {
+            System.out.println("[ReportService] Found test case from content: " + testCaseId);
+            return testCaseId + ": " + testName + " test case execution";
+        }
+        
+        // Final fallback: try to extract from method names in content (OLD APPROACH)
+        testCaseId = extractTestCaseFromMethodName(content);
+        if (testCaseId != null) {
+            System.out.println("[ReportService] Found test case from method name: " + testCaseId);
+            return testCaseId + ": " + testName + " test case execution";
+        }
+        
+        // Default fallback (should rarely happen now)
+        System.out.println("[ReportService] Using default fallback: TC01");
         return "TC01: " + testName + " test case execution";
+    }
+    
+    /**
+     * Extract test case ID from execution metadata (NEW METADATA-BASED APPROACH)
+     */
+    private String extractTestCaseFromMetadata(String content, String testName, Path filePath) {
+        try {
+            // Primary: Try to find metadata by exact report file name
+            String reportFileName = filePath.getFileName().toString();
+            Optional<TestExecutionMetadata> metadataOpt = testExecutionMetadataRepository.findByReportFileName(reportFileName);
+            if (metadataOpt.isPresent()) {
+                TestExecutionMetadata metadata = metadataOpt.get();
+                System.out.println("[ReportService] ✅ Found metadata by file name: " + reportFileName + " -> " + metadata.getTestCaseId());
+                return metadata.getTestCaseId();
+            }
+            
+            // Secondary: Try to find metadata by report file path
+            String reportPath = filePath.getParent().toString();
+            metadataOpt = testExecutionMetadataRepository.findByReportFilePath(reportPath);
+            if (metadataOpt.isPresent()) {
+                TestExecutionMetadata metadata = metadataOpt.get();
+                System.out.println("[ReportService] ✅ Found metadata by report path: " + reportPath + " -> " + metadata.getTestCaseId());
+                return metadata.getTestCaseId();
+            }
+            
+            // Fallback: Try to find by similar report file name pattern
+            String reportFilePattern = reportFileName.substring(0, Math.min(15, reportFileName.length())); // Take first 15 chars
+            List<TestExecutionMetadata> metadataList = testExecutionMetadataRepository.findByReportFileNameContaining(reportFilePattern);
+            if (!metadataList.isEmpty()) {
+                TestExecutionMetadata metadata = metadataList.get(0);
+                System.out.println("[ReportService] ✅ Found metadata by pattern: " + reportFilePattern + " -> " + metadata.getTestCaseId());
+                return metadata.getTestCaseId();
+            }
+            
+            // Alternative: lookup by recent execution time (last 1 hour) for project 2 (testv1)
+            LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
+            LocalDateTime now = LocalDateTime.now();
+            List<TestExecutionMetadata> recentMetadata = testExecutionMetadataRepository.findByProjectIdAndExecutionTimeBetween(
+                2L, // testv1 project ID
+                oneHourAgo, 
+                now
+            );
+            
+            if (!recentMetadata.isEmpty()) {
+                TestExecutionMetadata metadata = recentMetadata.get(0);
+                System.out.println("[ReportService] ✅ Found recent metadata for project 2: " + metadata.getTestCaseId() + " at " + metadata.getExecutionTime());
+                return metadata.getTestCaseId();
+            }
+            
+            System.out.println("[ReportService] ❌ No metadata found for file: " + filePath.getFileName());
+            
+        } catch (Exception e) {
+            System.out.println("[ReportService] Error extracting test case from metadata: " + e.getMessage());
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extract report file name from content
+     */
+    private String extractReportFileName(String content) {
+        // This could be enhanced to extract actual file name from report content
+        // For now, return null to use the time-based lookup
+        return null;
+    }
+
+    /**
+     * Extract test case ID from test name or content
+     */
+    private String extractTestCaseId(String content, String testName) {
+        // Check if test name contains TC pattern
+        Pattern tcPattern = Pattern.compile("(TC\\d+)", Pattern.CASE_INSENSITIVE);
+        Matcher tcMatcher = tcPattern.matcher(testName);
+        if (tcMatcher.find()) {
+            return tcMatcher.group(1).toUpperCase();
+        }
+        
+        // Check content for TC pattern
+        tcMatcher = tcPattern.matcher(content);
+        if (tcMatcher.find()) {
+            return tcMatcher.group(1).toUpperCase();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extract test case ID from method names in HTML content using database lookup
+     */
+    private String extractTestCaseFromMethodName(String content) {
+        // First try to extract method name pattern from content
+        String methodName = extractMethodNameFromContent(content);
+        if (methodName != null) {
+            // Query database to find test case with matching method pattern
+            String testCaseId = findTestCaseByMethodName(methodName);
+            if (testCaseId != null) {
+                return testCaseId;
+            }
+        }
+        
+        // Fallback: try pattern matching for tc##_ format
+        Pattern tcMethodPattern = Pattern.compile("tc(\\d+)_", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = tcMethodPattern.matcher(content.toLowerCase());
+        if (matcher.find()) {
+            String number = matcher.group(1);
+            String testCaseId = "TC" + String.format("%02d", Integer.parseInt(number));
+            return testCaseId;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Extract method name from HTML content
+     */
+    private String extractMethodNameFromContent(String content) {
+        // Look for TestNG method patterns in HTML content
+        String[] patterns = {
+            "(?i)(tc\\d+_[a-zA-Z0-9_]{3,})",  // tc01_methodName (minimum 3 chars after _)
+            "(?i)class='test-name'>([^<]*tc\\d+_[a-zA-Z0-9_]+)",  // from test-name span
+            "(?i)test[\\s\\w]*['\"]([^'\"]*tc\\d+_[a-zA-Z0-9_]+)['\"]"
+        };
+        
+        for (String patternStr : patterns) {
+            Pattern pattern = Pattern.compile(patternStr);
+            Matcher matcher = pattern.matcher(content);
+            if (matcher.find()) {
+                String methodName = matcher.group(1);
+                // Validate method name (should contain tc and underscore and be reasonable length)
+                if (methodName != null && methodName.contains("tc") && methodName.contains("_") && methodName.length() > 5) {
+                    return methodName;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Find test case ID by method name in database
+     */
+    private String findTestCaseByMethodName(String methodName) {
+        try {
+            // Query all test cases and look for matching method names
+            List<TestCase> allTestCases = testCaseRepository.findAll();
+            
+            for (TestCase testCase : allTestCases) {
+                // Check if method name matches the test case
+                if (isMethodNameMatchingTestCase(methodName, testCase)) {
+                    return testCase.getTestCaseId();
+                }
+            }
+        } catch (Exception e) {
+            // Silent error handling - method extraction is not critical
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Check if method name matches test case
+     */
+    private boolean isMethodNameMatchingTestCase(String methodName, TestCase testCase) {
+        String lowerMethodName = methodName.toLowerCase();
+        String testCaseId = testCase.getTestCaseId().toLowerCase();
+        
+        // Direct pattern match: tc01_ matches TC01, tc02_ matches TC02, etc.
+        if (lowerMethodName.startsWith(testCaseId.replace("tc", "tc"))) {
+            return true;
+        }
+        
+        // Extract number from test case ID and check method pattern
+        String testCaseNumber = testCaseId.replace("tc", "");
+        if (lowerMethodName.startsWith("tc" + testCaseNumber + "_")) {
+            return true;
+        }
+        
+        // Check if test case objective contains method keywords
+        String objective = testCase.getObjective() != null ? testCase.getObjective().toLowerCase() : "";
+        
+        // Extract keywords from method name (remove tc##_ prefix)
+        String methodKeywords = lowerMethodName.replaceFirst("tc\\d+_", "");
+        if (methodKeywords.length() > 3) { // Only check if we have meaningful keywords
+            if (objective.contains(methodKeywords)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**

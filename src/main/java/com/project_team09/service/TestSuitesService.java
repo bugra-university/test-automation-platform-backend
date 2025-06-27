@@ -303,14 +303,7 @@ public class TestSuitesService {
                 })
                 .count();
             
-            System.out.println("[TestSuites] Test Case " + testCase.getTestCaseId() + 
-                " - Step Progress: " + completedSteps + "/" + stepCount);
-            
-            // Debug: Print all step statuses for this test case
-            System.out.println("[TestSuites] Debug - " + testCase.getTestCaseId() + " step statuses:");
-            for (TestStep step : steps) {
-                System.out.println("  Step " + step.getStepNumber() + ": '" + step.getStatus() + "'");
-            }
+            // Step progress calculation completed
             
             testCaseMap.put("progress", Map.of("completed", completedSteps, "total", stepCount));
             

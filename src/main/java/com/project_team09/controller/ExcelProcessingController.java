@@ -77,45 +77,55 @@ public class ExcelProcessingController {
 
     @GetMapping("/projects/{projectId}/latest-excel")
     public ResponseEntity<ByteArrayResource> getLatestExcelFile(@PathVariable Long projectId) {
+        logger.info("[EXCEL-API] Getting latest Excel file for project ID: {}", projectId);
         try {
             // Verify project exists
-            projectRepository.findById(projectId)
+            Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found with id: " + projectId));
+            logger.info("[EXCEL-API] Project found: {}", project.getName());
             
             // Find the latest Excel file for this project
-            Optional<ExcelFile> latestExcelFile = excelFileRepository.findByProjectId(projectId)
-                .stream()
-                .findFirst(); // Assuming the repository returns files in order (newest first)
+            List<ExcelFile> allFiles = excelFileRepository.findByProjectId(projectId);
+            logger.info("[EXCEL-API] Found {} Excel files for project {}", allFiles.size(), projectId);
+            
+            Optional<ExcelFile> latestExcelFile = allFiles.stream().findFirst();
             
             if (latestExcelFile.isEmpty()) {
+                logger.warn("[EXCEL-API] No Excel file found for project {}", projectId);
                 return ResponseEntity.notFound().build();
             }
             
             ExcelFile excelFile = latestExcelFile.get();
             String filePath = excelFile.getFilePath();
+            logger.info("[EXCEL-API] Found Excel file: {} at path: {}", excelFile.getOriginalFileName(), filePath);
             
             // Read the file from disk
             Path path = Paths.get(filePath);
             if (!Files.exists(path)) {
+                logger.error("[EXCEL-API] File not found on disk: {}", filePath);
                 return ResponseEntity.notFound().build();
             }
             
             byte[] fileContent = Files.readAllBytes(path);
             ByteArrayResource resource = new ByteArrayResource(fileContent);
+            logger.info("[EXCEL-API] Successfully read file: {} bytes", fileContent.length);
             
             // Set response headers
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + excelFile.getOriginalFileName() + "\"");
             headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE);
             
+            logger.info("[EXCEL-API] Returning Excel file: {}", excelFile.getOriginalFileName());
             return ResponseEntity.ok()
                 .headers(headers)
                 .contentLength(fileContent.length)
                 .body(resource);
                 
         } catch (IOException e) {
+            logger.error("[EXCEL-API] IO Error reading Excel file for project {}: {}", projectId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {
+            logger.error("[EXCEL-API] General error for project {}: {}", projectId, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
