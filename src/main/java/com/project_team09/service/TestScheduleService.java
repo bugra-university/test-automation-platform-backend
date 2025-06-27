@@ -33,6 +33,7 @@ public class TestScheduleService {
     public TestSchedule createSchedule(TestSchedule schedule) {
         logger.info("Creating new test schedule for project: {}, userStory: {}", 
                    schedule.getProjectId(), schedule.getUserStoryId());
+        logger.info("Test case IDs received: {}", Arrays.toString(schedule.getTestCaseIds()));
         
         // İlk çalışma zamanını ayarla
         if (schedule.getNextRunTime() == null) {
@@ -210,9 +211,11 @@ public class TestScheduleService {
             }
             
             logger.info("✅ testExecutionService is not null, calling async method...");
+            logger.info("Schedule test case IDs: {}", Arrays.toString(schedule.getTestCaseIds()));
             testExecutionService.executeTestSuiteAsync(
                 schedule.getProjectId(), 
                 schedule.getUserStoryId(),
+                schedule.getTestCaseIds(), // Pass specific test case IDs
                 false, // headless = false for debugging (Chrome will open)
                 "chrome" // default browser
             ).thenAccept(result -> {

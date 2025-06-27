@@ -138,10 +138,18 @@ public class TestExecutionService {
     }
 
     /**
-     * Execute test suite asynchronously with configuration
+     * Execute test suite asynchronously with configuration (all test cases)
      */
     public CompletableFuture<Map<String, Object>> executeTestSuiteAsync(
             Long projectId, String userStoryId, boolean isHeadless, String browser) {
+        return executeTestSuiteAsync(projectId, userStoryId, null, isHeadless, browser);
+    }
+
+    /**
+     * Execute test suite asynchronously with configuration and specific test cases
+     */
+    public CompletableFuture<Map<String, Object>> executeTestSuiteAsync(
+            Long projectId, String userStoryId, String[] specificTestCaseIds, boolean isHeadless, String browser) {
         
         System.out.println("\n" + "=".repeat(80));
         System.out.println("[TestExecution] executeTestSuiteAsync CALLED");
@@ -179,6 +187,24 @@ public class TestExecutionService {
                 List<TestCase> testCases = testCaseRepository.findByProjectIdAndUserStoryId(projectId, normalizedUserStoryId);
                 System.out.println("[TestExecution] Found " + testCases.size() + " test cases for normalized user story: " + normalizedUserStoryId);
                 
+                // Filter test cases if specific ones are requested
+                if (specificTestCaseIds != null && specificTestCaseIds.length > 0) {
+                    Set<String> requestedTestCaseIds = new HashSet<>(Arrays.asList(specificTestCaseIds));
+                    List<TestCase> filteredTestCases = testCases.stream()
+                        .filter(tc -> requestedTestCaseIds.contains(tc.getTestCaseId()))
+                        .collect(java.util.stream.Collectors.toList());
+                    
+                    System.out.println("[TestExecution] Filtering test cases: requested " + Arrays.toString(specificTestCaseIds));
+                    System.out.println("[TestExecution] Before filtering: " + testCases.size() + " test cases");
+                    System.out.println("[TestExecution] After filtering: " + filteredTestCases.size() + " test cases");
+                    
+                    for (TestCase tc : filteredTestCases) {
+                        System.out.println("[TestExecution] Selected test case: " + tc.getTestCaseId() + " - " + tc.getObjective());
+                    }
+                    
+                    testCases = filteredTestCases;
+                }
+                
                 // Debug: Show all test cases in project
                 List<TestCase> allTestCases = testCaseRepository.findByProjectId(projectId);
                 System.out.println("[TestExecution] DEBUG: Total test cases in project " + projectId + ": " + allTestCases.size());
@@ -189,7 +215,8 @@ public class TestExecutionService {
                 if (testCases.isEmpty()) {
                     status.setStatus("FAILED");
                     status.setEndTime(LocalDateTime.now());
-                    status.setTestOutput("No test cases found for user story: " + userStoryId);
+                    status.setTestOutput("No test cases found for user story: " + userStoryId + 
+                        (specificTestCaseIds != null ? " with specific test cases: " + Arrays.toString(specificTestCaseIds) : ""));
                     return createExecutionResult(executionId, status, "No test cases found");
                 }
 
@@ -684,17 +711,43 @@ public class TestExecutionService {
         XmlTest test = new XmlTest(suite);
         test.setName("TestSuite_" + userStoryId);
         
-        // Add test classes based on user story mapping
+        // Group test cases by class and create XmlClass objects with specific methods
+        Map<String, List<TestCase>> testCasesByClass = new HashMap<>();
+        
+        for (TestCase testCase : testCases) {
+            String testClassName = mapTestCaseToTestClass(testCase);
+            if (testClassName != null) {
+                testCasesByClass.computeIfAbsent(testClassName, k -> new ArrayList<>()).add(testCase);
+            }
+        }
+        
         List<XmlClass> classes = new ArrayList<>();
         
-        // Map user story to actual test classes
-        String normalizedUserStoryId = userStoryId.replace("_", "");
-        String testClassName = mapUserStoryToTestClass(normalizedUserStoryId);
-        if (testClassName != null) {
-            classes.add(new XmlClass(testClassName));
+        for (Map.Entry<String, List<TestCase>> entry : testCasesByClass.entrySet()) {
+            String className = entry.getKey();
+            List<TestCase> classTestCases = entry.getValue();
+            
+            XmlClass xmlClass = new XmlClass(className);
+            List<XmlInclude> includeMethods = new ArrayList<>();
+            
+            for (TestCase testCase : classTestCases) {
+                String methodName = mapTestCaseToMethod(testCase);
+                if (methodName != null) {
+                    includeMethods.add(new XmlInclude(methodName));
+                    System.out.println("[TestExecution] Including method: " + methodName + " for test case: " + testCase.getTestCaseId());
+                }
+            }
+            
+            if (!includeMethods.isEmpty()) {
+                xmlClass.setIncludedMethods(includeMethods);
+                classes.add(xmlClass);
+                System.out.println("[TestExecution] Configured test class: " + className + " with " + includeMethods.size() + " methods");
+            }
         }
         
         test.setXmlClasses(classes);
+        
+        System.out.println("[TestExecution] Created test suite with " + classes.size() + " test classes for " + testCases.size() + " test cases");
         return suite;
     }
 
