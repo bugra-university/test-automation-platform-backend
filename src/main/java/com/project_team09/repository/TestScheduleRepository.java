@@ -18,6 +18,9 @@ public interface TestScheduleRepository extends JpaRepository<TestSchedule, Long
     // Project ve status bazlı schedule'ları getir
     List<TestSchedule> findByProjectIdAndStatusOrderByCreatedAtDesc(Long projectId, TestSchedule.ScheduleStatus status);
 
+    // Status bazlı schedule'ları getir (debug için)
+    List<TestSchedule> findByStatus(TestSchedule.ScheduleStatus status);
+
     // User story bazlı schedule'ları getir
     List<TestSchedule> findByProjectIdAndUserStoryIdOrderByCreatedAtDesc(Long projectId, String userStoryId);
 

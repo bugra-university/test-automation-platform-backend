@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Transactional
@@ -24,6 +25,9 @@ public class TestScheduleService {
 
     @Autowired
     private TestSuitesService testSuitesService;
+
+    @Autowired
+    private TestExecutionService testExecutionService;
 
     // Schedule oluştur
     public TestSchedule createSchedule(TestSchedule schedule) {
@@ -40,8 +44,12 @@ public class TestScheduleService {
             schedule.setTitle(schedule.getUserStoryId() + " - Test Schedule");
         }
         
+        logger.info("Schedule details before save - StartTime: {}, NextRunTime: {}, Status: {}", 
+                   schedule.getStartTime(), schedule.getNextRunTime(), schedule.getStatus());
+        
         TestSchedule savedSchedule = testScheduleRepository.save(schedule);
-        logger.info("Test schedule created with ID: {}", savedSchedule.getId());
+        logger.info("Test schedule created with ID: {}, NextRunTime: {}, Status: {}", 
+                   savedSchedule.getId(), savedSchedule.getNextRunTime(), savedSchedule.getStatus());
         
         return savedSchedule;
     }
@@ -149,7 +157,22 @@ public class TestScheduleService {
     // Çalışması gereken schedule'ları kontrol et (Scheduled task - her dakika)
     @Scheduled(fixedRate = 60000) // Her 60 saniyede bir kontrol et
     public void checkAndRunSchedules() {
-        List<TestSchedule> schedulesToRun = testScheduleRepository.findSchedulesToRun(LocalDateTime.now());
+        LocalDateTime currentTime = LocalDateTime.now();
+        logger.info("Checking schedules at: {}", currentTime);
+        
+        // Debug: Tüm SCHEDULED durumundaki schedule'ları listele
+        List<TestSchedule> allScheduledSchedules = testScheduleRepository.findByStatus(TestSchedule.ScheduleStatus.SCHEDULED);
+        logger.info("Total SCHEDULED schedules in database: {}", allScheduledSchedules.size());
+        
+        for (TestSchedule schedule : allScheduledSchedules) {
+            logger.info("Schedule ID: {}, NextRunTime: {}, Status: {}, ShouldRun: {}", 
+                       schedule.getId(), 
+                       schedule.getNextRunTime(), 
+                       schedule.getStatus(),
+                       schedule.getNextRunTime() != null && currentTime.isAfter(schedule.getNextRunTime()));
+        }
+        
+        List<TestSchedule> schedulesToRun = testScheduleRepository.findSchedulesToRun(currentTime);
         
         logger.info("Found {} schedules to run", schedulesToRun.size());
         
@@ -176,26 +199,68 @@ public class TestScheduleService {
             schedule.setLastRunTime(LocalDateTime.now());
             testScheduleRepository.save(schedule);
             
-            // Test suite'ı çalıştır
-            Map<String, Object> result = testSuitesService.runTestSuite(
+            // Test suite'ı gerçek TestExecutionService ile çalıştır (headless mode)
+            logger.info("Starting real test execution for schedule: {}", schedule.getId());
+            logger.info("Calling TestExecutionService.executeTestSuiteAsync with projectId={}, userStoryId={}", 
+                       schedule.getProjectId(), schedule.getUserStoryId());
+            
+            if (testExecutionService == null) {
+                logger.error("❌ testExecutionService is NULL! Autowiring failed!");
+                throw new RuntimeException("TestExecutionService not available");
+            }
+            
+            logger.info("✅ testExecutionService is not null, calling async method...");
+            testExecutionService.executeTestSuiteAsync(
                 schedule.getProjectId(), 
-                schedule.getUserStoryId()
-            );
+                schedule.getUserStoryId(),
+                false, // headless = false for debugging (Chrome will open)
+                "chrome" // default browser
+            ).thenAccept(result -> {
+                logger.info("Test execution async callback received for schedule: {}", schedule.getId());
+                // Async completion callback
+                try {
+                    TestSchedule updatedSchedule = testScheduleRepository.findById(schedule.getId()).orElse(null);
+                    if (updatedSchedule != null) {
+                        String status = (String) result.get("status");
+                        if ("COMPLETED".equals(status) || "PASSED".equals(status)) {
+                            updatedSchedule.setStatus(TestSchedule.ScheduleStatus.COMPLETED);
+                            logger.info("Schedule {} completed successfully (async)", schedule.getId());
+                        } else {
+                            updatedSchedule.setStatus(TestSchedule.ScheduleStatus.FAILED);
+                            logger.warn("Schedule {} failed (async) with result: {}", schedule.getId(), result);
+                        }
+                        
+                        // Recurring schedule handling
+                        if (updatedSchedule.isRecurring()) {
+                            calculateNextRunTime(updatedSchedule);
+                            updatedSchedule.setStatus(TestSchedule.ScheduleStatus.SCHEDULED);
+                        }
+                        
+                        testScheduleRepository.save(updatedSchedule);
+                    }
+                } catch (Exception e) {
+                    logger.error("Error in async completion callback for schedule {}: {}", schedule.getId(), e.getMessage());
+                }
+            }).exceptionally(throwable -> {
+                // Async error callback
+                try {
+                    TestSchedule updatedSchedule = testScheduleRepository.findById(schedule.getId()).orElse(null);
+                    if (updatedSchedule != null) {
+                        updatedSchedule.setStatus(TestSchedule.ScheduleStatus.FAILED);
+                        testScheduleRepository.save(updatedSchedule);
+                    }
+                    logger.error("Schedule {} failed with exception: {}", schedule.getId(), throwable.getMessage());
+                } catch (Exception e) {
+                    logger.error("Error in async error callback for schedule {}: {}", schedule.getId(), e.getMessage());
+                }
+                return null;
+            });
             
-            // Sonuç başarılıysa COMPLETED, değilse FAILED
-            if (result != null && "started".equals(result.get("status"))) {
-                schedule.setStatus(TestSchedule.ScheduleStatus.COMPLETED);
-                logger.info("Schedule {} completed successfully", schedule.getId());
-            } else {
-                schedule.setStatus(TestSchedule.ScheduleStatus.FAILED);
-                logger.warn("Schedule {} failed with result: {}", schedule.getId(), result);
-            }
+            // For immediate status, mark as RUNNING and let async callbacks handle completion
+            schedule.setStatus(TestSchedule.ScheduleStatus.RUNNING);
+            logger.info("Schedule {} started successfully, execution in progress", schedule.getId());
             
-            // Eğer recurring schedule ise next run time'ı hesapla
-            if (schedule.isRecurring()) {
-                calculateNextRunTime(schedule);
-                schedule.setStatus(TestSchedule.ScheduleStatus.SCHEDULED); // Tekrar SCHEDULED yap
-            }
+            // Note: Recurring schedule logic is now handled in async callbacks
             
         } catch (Exception e) {
             schedule.setStatus(TestSchedule.ScheduleStatus.FAILED);

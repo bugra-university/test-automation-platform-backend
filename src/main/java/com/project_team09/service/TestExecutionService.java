@@ -143,8 +143,16 @@ public class TestExecutionService {
     public CompletableFuture<Map<String, Object>> executeTestSuiteAsync(
             Long projectId, String userStoryId, boolean isHeadless, String browser) {
         
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("[TestExecution] executeTestSuiteAsync CALLED");
+        System.out.println("[TestExecution] Parameters: projectId=" + projectId + ", userStoryId=" + userStoryId);
+        System.out.println("[TestExecution] Config: isHeadless=" + isHeadless + ", browser=" + browser);
+        System.out.println("=".repeat(80));
+        
         return CompletableFuture.supplyAsync(() -> {
+            System.out.println("[TestExecution] ASYNC THREAD STARTED for user story: " + userStoryId);
             String executionId = generateExecutionId(projectId, userStoryId);
+            System.out.println("[TestExecution] Generated execution ID: " + executionId);
             
             try {
                 // Create execution status
@@ -165,7 +173,18 @@ public class TestExecutionService {
                 ));
 
                 // Get test cases for this user story
-                List<TestCase> testCases = testCaseRepository.findByProjectIdAndUserStoryId(projectId, userStoryId);
+                // Normalize user story ID: US_01 -> US01
+                String normalizedUserStoryId = userStoryId.replace("_", "");
+                System.out.println("[TestExecution] Searching for test cases: projectId=" + projectId + ", userStoryId='" + userStoryId + "' -> normalized: '" + normalizedUserStoryId + "'");
+                List<TestCase> testCases = testCaseRepository.findByProjectIdAndUserStoryId(projectId, normalizedUserStoryId);
+                System.out.println("[TestExecution] Found " + testCases.size() + " test cases for normalized user story: " + normalizedUserStoryId);
+                
+                // Debug: Show all test cases in project
+                List<TestCase> allTestCases = testCaseRepository.findByProjectId(projectId);
+                System.out.println("[TestExecution] DEBUG: Total test cases in project " + projectId + ": " + allTestCases.size());
+                for (TestCase tc : allTestCases) {
+                    System.out.println("[TestExecution] DEBUG: Test case: userStoryId='" + tc.getUserStoryId() + "', testCaseId='" + tc.getTestCaseId() + "'");
+                }
                 
                 if (testCases.isEmpty()) {
                     status.setStatus("FAILED");
@@ -669,7 +688,8 @@ public class TestExecutionService {
         List<XmlClass> classes = new ArrayList<>();
         
         // Map user story to actual test classes
-        String testClassName = mapUserStoryToTestClass(userStoryId);
+        String normalizedUserStoryId = userStoryId.replace("_", "");
+        String testClassName = mapUserStoryToTestClass(normalizedUserStoryId);
         if (testClassName != null) {
             classes.add(new XmlClass(testClassName));
         }
