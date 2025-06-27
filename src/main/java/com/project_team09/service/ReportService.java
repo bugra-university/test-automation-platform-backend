@@ -156,12 +156,22 @@ public class ReportService {
      * Extract test status and counts
      */
     private String extractStatus(String content) {
-        if (content.contains("test(s) failed")) {
-            return "failed";
-        } else if (content.contains("test(s) passed") && content.contains("0</span> test(s) failed")) {
+        Map<String, Integer> counts = extractTestCounts(content);
+        int passed = counts.get("passed");
+        int failed = counts.get("failed");
+        
+        if (passed > 0 && failed == 0) {
             return "passed";
-        } else {
+        } else if (passed == 0 && failed > 0) {
+            return "failed";
+        } else if (passed > 0 && failed > 0) {
             return "mixed";
+        } else {
+            // No tests found, check content for any indicators
+            if (content.contains("test(s) passed") && !content.contains("1</span> test(s) failed") && !content.contains("2</span> test(s) failed")) {
+                return "passed";
+            }
+            return "failed";
         }
     }
     
