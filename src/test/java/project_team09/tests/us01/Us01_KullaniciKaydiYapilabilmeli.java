@@ -7,7 +7,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.asserts.SoftAssert;
 import project_team09.pages.Us01Us02Us03.Anasayfa;
 import project_team09.utilities.ConfigReader;
-import project_team09.utilities.Driver;
 import project_team09.utilities.WebDriverManager;
 import project_team09.utilities.ExtentReport;
 import project_team09.utilities.ReusableMethods;

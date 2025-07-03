@@ -32,7 +32,6 @@ public class ReportService {
     private TestExecutionMetadataRepository testExecutionMetadataRepository;
     
     private static final String REPORTS_DIR = "TestOutput/reports";
-    private static final String EXECUTION_DIR = "TestOutput";
     
     /**
      * Get all test reports from TestOutput directory
@@ -337,14 +336,7 @@ public class ReportService {
         return null;
     }
     
-    /**
-     * Extract report file name from content
-     */
-    private String extractReportFileName(String content) {
-        // This could be enhanced to extract actual file name from report content
-        // For now, return null to use the time-based lookup
-        return null;
-    }
+
 
     /**
      * Extract test case ID from test name or content

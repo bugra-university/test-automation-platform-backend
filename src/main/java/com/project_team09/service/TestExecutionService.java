@@ -2,7 +2,6 @@ package com.project_team09.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.testng.TestNG;
 import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlTest;
@@ -886,17 +885,7 @@ public class TestExecutionService {
         return suite;
     }
 
-    private String mapUserStoryToTestClass(String userStoryId) {
-        // Map user story IDs to actual test class names
-        Map<String, String> userStoryMapping = new HashMap<>();
-        userStoryMapping.put("US01", "project_team09.tests.us01.Us01_KullaniciKaydiYapilabilmeli");  // Fixed: US01 not US_01
-        userStoryMapping.put("US02", "project_team09.tests.us02.Us02_GecersizYeniKullaniciKayit");   // Fixed: US02 not US_02
-        userStoryMapping.put("US03", "project_team09.tests.us03.Us03_BillingAdressEkle");            // Fixed: US03 not US_03
-        // Add more mappings as needed
-        
-        System.out.println("[TestExecution] mapUserStoryToTestClass: userStoryId='" + userStoryId + "' -> " + userStoryMapping.get(userStoryId));
-        return userStoryMapping.get(userStoryId);
-    }
+
 
     private String mapTestCaseToTestClass(TestCase testCase) {
         String userStoryId = testCase.getUserStoryId();

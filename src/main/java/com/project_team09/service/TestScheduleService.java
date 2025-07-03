@@ -10,9 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @Transactional
@@ -22,9 +20,6 @@ public class TestScheduleService {
 
     @Autowired
     private TestScheduleRepository testScheduleRepository;
-
-    @Autowired
-    private TestSuitesService testSuitesService;
 
     @Autowired
     private TestExecutionService testExecutionService;
