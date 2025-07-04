@@ -126,56 +126,62 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest = ExtentReport.extentReports.createTest("Kullanıcı kaydı","username alanı boş bırakıldığında kayıt işlemi gerçekleşmemeli test edildi");
 
         // Initialize WebDriver with WebDriverManager (like TC01)
-        System.out.println("[TC02] Initializing WebDriverManager...");
-        WebDriverManager.initializeDriver();
-        System.out.println("[TC02] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+        StepTracker.executeStep("Initialize WebDriver", () -> {
+            System.out.println("[TC02] Initializing WebDriverManager...");
+            WebDriverManager.initializeDriver();
+            System.out.println("[TC02] WebDriverManager ready: " + WebDriverManager.isDriverReady());
+        });
 
-        //Web sitesine git ve doğrula
-        System.out.println("[TC02] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
-        WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
-        
-        // Initialize page object AFTER WebDriverManager is ready
         Anasayfa anasayfa = new Anasayfa();
-        softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
-        extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
 
-        //Registera tıkla
-        anasayfa.registerAs.click();
-        ReusableMethods.bekle(3);
-        extentTest.info("Registera tıklandı");
+        StepTracker.executeStep("Navigate to AllOverCommerce website", () -> {
+            System.out.println("[TC02] Navigating to: " + ConfigReader.getProperty("allowerCommerceUrl"));
+            WebDriverManager.getDriver().get(ConfigReader.getProperty("allowerCommerceUrl"));
+            softAssert.assertTrue(anasayfa.registerAs.isDisplayed());
+            extentTest.info("web sitesine gidildi ve sayfanın açıldığı doğrulandı");
+        });
 
-        //username kutusunu boş bırak
-        extentTest.info("username kutusu boş bırakıldı");
+        StepTracker.executeStep("Click on Register button", () -> {
+            anasayfa.registerAs.click();
+            ReusableMethods.bekle(3);
+            extentTest.info("Registera tıklandı");
+        });
 
+        StepTracker.executeStep("Leave username empty", () -> {
+            // Username kutusunu boş bırak
+            extentTest.info("username kutusu boş bırakıldı");
+        });
 
-        //email kutusuna bir mail gir
-        anasayfa.emailAs.sendKeys(faker.internet().emailAddress());
-        extentTest.info("yeni bir email girildi");
+        String email = faker.internet().emailAddress();
+        StepTracker.executeStep("Enter email: " + email, () -> {
+            anasayfa.emailAs.sendKeys(email);
+            extentTest.info("yeni bir email girildi");
+        });
 
-        //Password kutusuna bir şifre gir
-        anasayfa.passwordSignUpAs.sendKeys("signInPassword1");
-        extentTest.info("şifre girildi");
+        StepTracker.executeStep("Enter password", () -> {
+            anasayfa.passwordSignUpAs.sendKeys("signInPassword1");
+            extentTest.info("şifre girildi");
+        });
 
-        //"I agree to the privacy policy" kontrol kutusuna tıkla
-        anasayfa.iAgreeButonAs.click();
-        extentTest.info("I agree to the privacy policy kontrol kutusuna tıklandı");
+        StepTracker.executeStep("Agree to privacy policy", () -> {
+            anasayfa.iAgreeButonAs.click();
+            extentTest.info("I agree to the privacy policy kontrol kutusuna tıklandı");
+        });
 
-        //Sign Up butonuna tıkla
-        anasayfa.signUpYeniKayit.click();
-        ReusableMethods.bekle(2);
-        extentTest.info("Sign Up butonuna tıklandı");
+        StepTracker.executeStep("Click Sign Up button", () -> {
+            anasayfa.signUpYeniKayit.click();
+            ReusableMethods.bekle(2);
+            extentTest.info("Sign Up butonuna tıklandı");
+        });
 
-        //Siteye kayıt yapılamadığını doğrula
-        ReusableMethods.bekle(2);
-        softAssert.assertFalse(anasayfa.popUpMesajAs.isDisplayed());
-        extentTest.info("Siteye kayıt yapılamadığı doğrulandı");
+        StepTracker.executeStep("Verify registration is not successful", () -> {
+            ReusableMethods.bekle(2);
+            softAssert.assertFalse(anasayfa.popUpMesajAs.isDisplayed());
+            extentTest.info("Siteye kayıt yapılamadığı doğrulandı");
+        });
+
         softAssert.assertAll();
-
-
-        //Sayfayı kapat - WebDriverManager handles cleanup via @AfterMethod
-        // Driver.closeDriver(); // Removed - let @AfterMethod handle this
         extentTest.info("test completed successfully");
-
     }
 
     @Test
