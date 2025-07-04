@@ -260,11 +260,22 @@ public class StepTrackingService {
                 if (step.getStepNumber().equals(stepNumber)) {
                     step.setStatus(status);
                     
-                    // Note: TestStep model might need additional fields for timing
-                    // For now, we're just updating the status
+                    // Update timing information
+                    if ("running".equals(status)) {
+                        step.setStartTime(LocalDateTime.now());
+                        step.setLastRun(LocalDateTime.now());
+                        step.setEndTime(null);
+                        step.setDurationMs(null);
+                    } else if ("passed".equals(status) || "failed".equals(status)) {
+                        step.setEndTime(endTime);
+                        step.setDurationMs(durationMs);
+                        step.setLastRun(endTime);
+                    }
+                    
                     testStepRepository.save(step);
                     
-                    System.out.println("[StepTracking] Updated step " + stepNumber + " in database with status: " + status);
+                    System.out.println("[StepTracking] Updated step " + stepNumber + " in database with status: " + status + 
+                                     (durationMs != null ? ", duration: " + durationMs + "ms" : ""));
                     break;
                 }
             }

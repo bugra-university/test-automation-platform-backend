@@ -71,6 +71,10 @@ CREATE TABLE test_steps (
     url TEXT, -- URL bilgisi (varsa)
     screenshot_path TEXT, -- Ekran görüntüsü yolu
     status VARCHAR(50), -- PASS, FAIL, NOT_RUN
+    start_time TIMESTAMP, -- Test adımının başlangıç zamanı
+    end_time TIMESTAMP, -- Test adımının bitiş zamanı
+    duration_ms BIGINT, -- Test adımının süresi (milisaniye)
+    last_run TIMESTAMP, -- Son çalıştırılma zamanı
     row_index INT, -- Excel'deki satır konumu
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (test_case_id) REFERENCES test_cases(id) ON DELETE CASCADE

@@ -44,6 +44,18 @@ public class TestStep {
     @Column(name = "status")
     private String status;
 
+    @Column(name = "start_time")
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
+
+    @Column(name = "duration_ms")
+    private Long durationMs;
+
+    @Column(name = "last_run")
+    private LocalDateTime lastRun;
+
     @Column(name = "row_index")
     private Integer rowIndex;
 
@@ -137,6 +149,38 @@ public class TestStep {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public Long getDurationMs() {
+        return durationMs;
+    }
+
+    public void setDurationMs(Long durationMs) {
+        this.durationMs = durationMs;
+    }
+
+    public LocalDateTime getLastRun() {
+        return lastRun;
+    }
+
+    public void setLastRun(LocalDateTime lastRun) {
+        this.lastRun = lastRun;
     }
 
     public Integer getRowIndex() {

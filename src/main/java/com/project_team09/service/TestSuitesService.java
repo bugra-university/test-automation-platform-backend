@@ -13,6 +13,7 @@ import com.project_team09.repository.TestStepRepository;
 import com.project_team09.repository.TestResultRepository;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -308,7 +309,7 @@ public class TestSuitesService {
             testCaseMap.put("progress", Map.of("completed", completedSteps, "total", stepCount));
             
             List<Map<String, Object>> stepMaps = steps.stream()
-                .map(step -> convertTestStepToMap(step, steps.size()))
+                .map(this::convertTestStepToMap)
                 .collect(Collectors.toList());
             testCaseMap.put("steps", stepMaps);
         } else {
@@ -319,26 +320,41 @@ public class TestSuitesService {
         return testCaseMap;
     }
 
-    private Map<String, Object> convertTestStepToMap(TestStep testStep) {
+    private Map<String, Object> convertTestStepToMap(TestStep step) {
         Map<String, Object> stepMap = new HashMap<>();
-        stepMap.put("id", testStep.getStepNumber());
-        stepMap.put("description", testStep.getDescription());
-        stepMap.put("status", testStep.getStatus() != null ? testStep.getStatus().toLowerCase() : "pending");
-        stepMap.put("testData", testStep.getTestData());
-        stepMap.put("expectedResult", testStep.getExpectedResult());
-        stepMap.put("actualResult", testStep.getActualResult());
-        stepMap.put("lastRun", null);
-        stepMap.put("duration", null);
+        stepMap.put("id", step.getId());
+        stepMap.put("stepNumber", step.getStepNumber());
+        stepMap.put("description", step.getDescription());
+        stepMap.put("testData", step.getTestData());
+        stepMap.put("expectedResult", step.getExpectedResult());
+        stepMap.put("actualResult", step.getActualResult());
+        stepMap.put("isHome", step.getIsHome());
+        stepMap.put("url", step.getUrl());
+        stepMap.put("screenshotPath", step.getScreenshotPath());
+        stepMap.put("status", step.getStatus());
+        stepMap.put("rowIndex", step.getRowIndex());
+        
+        // Add timing information
+        if (step.getLastRun() != null) {
+            stepMap.put("lastRun", step.getLastRun().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        } else {
+            stepMap.put("lastRun", null);
+        }
+        
+        if (step.getDurationMs() != null) {
+            stepMap.put("duration", formatDuration(step.getDurationMs()));
+        } else {
+            stepMap.put("duration", null);
+        }
+        
         return stepMap;
     }
 
-    private Map<String, Object> convertTestStepToMap(TestStep testStep, int totalSteps) {
-        Map<String, Object> stepMap = convertTestStepToMap(testStep);
-        
-        // Add step progress (current step / total steps)
-        stepMap.put("stepNumber", testStep.getStepNumber());
-        stepMap.put("progress", testStep.getStepNumber() + "/" + totalSteps);
-        
-        return stepMap;
+    private String formatDuration(Long durationMs) {
+        long durationSeconds = durationMs / 1000;
+        long hours = durationSeconds / 3600;
+        long minutes = (durationSeconds % 3600) / 60;
+        long seconds = durationSeconds % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 } 
