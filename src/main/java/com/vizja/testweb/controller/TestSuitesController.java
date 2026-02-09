@@ -1,28 +1,20 @@
 package com.vizja.testweb.controller;
 
+import com.vizja.testweb.service.StepTrackingService;
+import com.vizja.testweb.service.TestExecutionService;
+import com.vizja.testweb.service.TestSuitesService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.*;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import com.vizja.testweb.service.TestSuitesService;
-import com.vizja.testweb.service.TestExecutionService;
-import com.vizja.testweb.service.StepTrackingService;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.concurrent.CompletableFuture;
 import java.io.File;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/test-suites")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class TestSuitesController {
     @Autowired
     private TestSuitesService testSuitesService;

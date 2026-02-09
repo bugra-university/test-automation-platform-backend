@@ -1,19 +1,19 @@
 -- 04_users_and_roles.sql
--- Bu dosya kullanıcı kimlik doğrulama ve yetkilendirme için gerekli tabloları içerir
+-- This file contains tables required for user authentication and authorization
 
--- Önceki tabloların DROP edilmesi (eğer varsa)
+-- Dropping previous tables (if any)
 DROP TABLE IF EXISTS user_roles CASCADE;
 DROP TABLE IF EXISTS roles CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
--- Roles tablosu - Kullanıcı rollerini saklamak için
+-- Roles table - To store user roles
 CREATE TABLE roles (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(20) NOT NULL,
     CONSTRAINT uk_roles_name UNIQUE (name)
 );
 
--- Users tablosu - Kullanıcı bilgilerini saklamak için
+-- Users table - To store user information
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE users (
     CONSTRAINT uk_users_email UNIQUE (email)
 );
 
--- User roles junction tablosu - Hangi kullanıcının hangi rollere sahip olduğunu saklamak için
+-- User roles junction table - To store which user has which roles
 CREATE TABLE user_roles (
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
@@ -38,25 +38,25 @@ CREATE TABLE user_roles (
     FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
 );
 
--- Kullanıcılar için indeksler
+-- Indexes for users
 CREATE INDEX idx_user_username ON users (username);
 CREATE INDEX idx_user_email ON users (email);
 
--- Varsayılan rolleri ekleme
+-- Adding default roles
 INSERT INTO roles (name) VALUES ('ROLE_USER');
 INSERT INTO roles (name) VALUES ('ROLE_MODERATOR');
 INSERT INTO roles (name) VALUES ('ROLE_ADMIN');
 
--- Varsayılan admin kullanıcısı ekleme (şifre: admin123)
+-- Adding default admin user (password: admin123)
 INSERT INTO users (username, email, password, first_name, last_name)
 VALUES ('admin', 'admin@test.com', '$2a$10$eMeAv9YU45TJTLHKNGLcy.X5RIkU0TW.F6Y3dLhkC9vLesvRt0hAy', 'Admin', 'User');
 
--- Test kullanıcısı ekleme (şifre: admin123)
+-- Adding test user (password: admin123)
 INSERT INTO users (username, email, password, first_name, last_name)
 VALUES ('testuser', 'testuser@test.com', '$2a$10$eMeAv9YU45TJTLHKNGLcy.X5RIkU0TW.F6Y3dLhkC9vLesvRt0hAy', 'Test', 'User');
 
--- Varsayılan kullanıcılara admin rolü atama
+-- Assigning admin role to default users
 INSERT INTO user_roles (user_id, role_id)
 VALUES 
-    (1, 3), -- admin kullanıcısına ROLE_ADMIN
-    (2, 3); -- testuser kullanıcısına ROLE_ADMIN
+    (1, 3), -- ROLE_ADMIN for admin user
+    (2, 3); -- ROLE_ADMIN for testuser

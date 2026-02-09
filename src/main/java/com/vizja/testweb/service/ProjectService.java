@@ -1,41 +1,41 @@
 package com.vizja.testweb.service;
-import com.vizja.testweb.model.Project;
-import com.vizja.testweb.model.User;
-import com.vizja.testweb.model.ExcelFile;
-import com.vizja.testweb.repository.ProjectRepository;
-import com.vizja.testweb.repository.UserRepository;
-import com.vizja.testweb.repository.ExcelFileRepository;
+
+import com.vizja.testweb.model.*;
+import com.vizja.testweb.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.io.File;
-import java.util.List;
-import java.util.Optional;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
+
 @Service
 public class ProjectService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ExcelFileRepository excelFileRepository;
+
     @Autowired
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository, ExcelFileRepository excelFileRepository) {
+    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository,
+            ExcelFileRepository excelFileRepository) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.excelFileRepository = excelFileRepository;
     }
+
     public List<Project> getAllProjects() {
         return projectRepository.findAll();
     }
+
     public List<Project> getProjectsByOwnerId(Long ownerId) {
         return projectRepository.findByOwnerIdOrderByCreatedAtDesc(ownerId);
     }
+
     public Project createProject(String name, String description) {
         User defaultUser = userRepository.findByUsername("testuser");
         if (defaultUser == null) {
             defaultUser = new User();
             defaultUser.setUsername("testuser");
             defaultUser.setEmail("test@example.com");
-            defaultUser.setPassword("encoded_password"); 
+            defaultUser.setPassword("encoded_password");
             defaultUser.setFirstName("Test");
             defaultUser.setLastName("User");
             defaultUser = userRepository.save(defaultUser);
@@ -43,10 +43,12 @@ public class ProjectService {
         Project project = new Project(name, description, defaultUser.getId(), defaultUser.getUsername());
         return projectRepository.save(project);
     }
+
     public Project getProjectById(Long id) {
         Optional<Project> project = projectRepository.findById(id);
         return project.orElse(null);
     }
+
     public Project updateProject(Long id, String name, String description) {
         Optional<Project> existingProject = projectRepository.findById(id);
         if (existingProject.isPresent()) {
@@ -57,6 +59,7 @@ public class ProjectService {
         }
         return null;
     }
+
     public boolean deleteProject(Long id) {
         if (projectRepository.existsById(id)) {
             deletePhysicalExcelFiles(id);
@@ -65,6 +68,7 @@ public class ProjectService {
         }
         return false;
     }
+
     private void deletePhysicalExcelFiles(Long projectId) {
         try {
             List<ExcelFile> excelFiles = excelFileRepository.findByProjectId(projectId);
@@ -85,6 +89,7 @@ public class ProjectService {
             System.err.println("Error deleting physical Excel files for project " + projectId + ": " + e.getMessage());
         }
     }
+
     public Map<String, Object> getProjectDatabaseActivity(Long projectId) {
         Map<String, Object> activity = new HashMap<>();
         try {
@@ -98,7 +103,7 @@ public class ProjectService {
             activity.put("projectUpdatedAt", project.getUpdatedAt());
             List<ExcelFile> excelFiles = excelFileRepository.findByProjectId(projectId);
             if (!excelFiles.isEmpty()) {
-                ExcelFile latestExcel = excelFiles.get(0); 
+                ExcelFile latestExcel = excelFiles.get(0);
                 activity.put("lastExcelParseDate", latestExcel.getUploadDate());
                 activity.put("excelLastModified", latestExcel.getLastModified());
                 activity.put("hasExcelFile", true);
@@ -113,4 +118,3 @@ public class ProjectService {
         return activity;
     }
 }
-

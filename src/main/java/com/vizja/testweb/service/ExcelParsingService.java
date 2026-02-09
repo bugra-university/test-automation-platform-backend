@@ -1,4 +1,5 @@
 package com.vizja.testweb.service;
+
 import com.vizja.testweb.model.*;
 import com.vizja.testweb.repository.*;
 import org.apache.poi.ss.usermodel.*;
@@ -8,11 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.util.*;
+
 @Service
 public class ExcelParsingService {
     private static final Logger logger = LoggerFactory.getLogger(ExcelParsingService.class);
@@ -27,6 +27,7 @@ public class ExcelParsingService {
     @Autowired
     private TestStepRepository testStepRepository;
     private static final String UPLOAD_DIR = "uploads/excel-files/";
+
     public String parseExcelFile(MultipartFile file, Project project) {
         logger.info("Starting Excel parsing for project: {} with file: {}", project.getName(),
                 file.getOriginalFilename());
@@ -42,6 +43,7 @@ public class ExcelParsingService {
             throw new RuntimeException("Failed to parse Excel file: " + e.getMessage(), e);
         }
     }
+
     public void cleanExistingProjectData(Project project) {
         logger.info("Cleaning existing data for project: {}", project.getName());
         testStepRepository.deleteByProjectId(project.getId());
@@ -51,6 +53,7 @@ public class ExcelParsingService {
         excelFileRepository.deleteByProjectId(project.getId());
         logger.info("Existing data cleaned for project: {}", project.getName());
     }
+
     private String saveFilePhysically(MultipartFile file) throws IOException {
         File uploadDir = new File(UPLOAD_DIR);
         if (!uploadDir.exists()) {
@@ -66,6 +69,7 @@ public class ExcelParsingService {
         logger.info("File saved physically at: {}", filePath);
         return filePath;
     }
+
     private ExcelFile createExcelFileRecord(MultipartFile file, Project project, String filePath) {
         ExcelFile excelFile = new ExcelFile();
         excelFile.setProject(project);
@@ -78,6 +82,7 @@ public class ExcelParsingService {
         logger.info("Excel file record created with ID: {}", excelFile.getId());
         return excelFile;
     }
+
     private void parseExcelContent(MultipartFile file, Project project, ExcelFile excelFile) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             logger.info("Excel file has {} sheets", workbook.getNumberOfSheets());
@@ -97,6 +102,7 @@ public class ExcelParsingService {
             }
         }
     }
+
     private ExcelSheet createExcelSheetRecord(ExcelFile excelFile, String sheetName, int sheetIndex) {
         ExcelSheet excelSheet = new ExcelSheet();
         excelSheet.setExcelFile(excelFile);
@@ -108,6 +114,7 @@ public class ExcelParsingService {
         logger.info("Excel sheet record created: {} (type: {}) with ID: {}", sheetName, sheetType, excelSheet.getId());
         return excelSheet;
     }
+
     private String determineSheetType(ExcelFile excelFile, String sheetName, int sheetIndex) {
         String nameLower = sheetName.trim().toLowerCase();
         if (nameLower.contains("backlog")) {
@@ -162,6 +169,7 @@ public class ExcelParsingService {
         }
         return "UNKNOWN";
     }
+
     private void parseBacklogSheet(Sheet sheet, Project project, ExcelSheet excelSheet) {
         logger.info("Parsing backlog sheet: {}", sheet.getSheetName());
         List<ProductBacklogItem> backlogItems = new ArrayList<>();
@@ -201,6 +209,7 @@ public class ExcelParsingService {
             logger.warn("No backlog items found in sheet: {}", sheet.getSheetName());
         }
     }
+
     private void parseTestCaseSheet(Sheet sheet, Project project, ExcelSheet excelSheet) {
         logger.info("Parsing test case sheet: {}", sheet.getSheetName());
         Map<String, TestCase> testCaseMap = new HashMap<>();
@@ -216,12 +225,12 @@ public class ExcelParsingService {
             Row row = sheet.getRow(rowIndex);
             if (row == null)
                 continue;
-            String usId = getCellStringValue(row.getCell(0)); 
-            String tcId = getCellStringValue(row.getCell(1)); 
-            String objective = getCellStringValue(row.getCell(2)); 
-            String preCondition = getCellStringValue(row.getCell(3)); 
-            String stepNoStr = getCellStringValue(row.getCell(4)); 
-            String stepDescription = getCellStringValue(row.getCell(5)); 
+            String usId = getCellStringValue(row.getCell(0));
+            String tcId = getCellStringValue(row.getCell(1));
+            String objective = getCellStringValue(row.getCell(2));
+            String preCondition = getCellStringValue(row.getCell(3));
+            String stepNoStr = getCellStringValue(row.getCell(4));
+            String stepDescription = getCellStringValue(row.getCell(5));
             if (!usId.isEmpty())
                 lastUsId = usId;
             else
@@ -268,10 +277,10 @@ public class ExcelParsingService {
                 testCase = new TestCase();
                 testCase.setProject(project);
                 testCase.setExcelSheet(excelSheet);
-                testCase.setUserStoryId(normalizeUserStoryId(usId)); 
-                testCase.setTestCaseId(tcId); 
-                testCase.setObjective(objective); 
-                testCase.setPreCondition(preCondition); 
+                testCase.setUserStoryId(normalizeUserStoryId(usId));
+                testCase.setTestCaseId(tcId);
+                testCase.setObjective(objective);
+                testCase.setPreCondition(preCondition);
                 testCase.setRowIndex(rowIndex);
                 testCase.setCreatedAt(LocalDateTime.now());
                 testCaseMap.put(testCaseKey, testCase);
@@ -289,11 +298,11 @@ public class ExcelParsingService {
                     logger.debug("Could not parse step number '{}', using default", stepNoStr);
                 }
                 testStep.setStepNumber(stepNumber);
-                testStep.setDescription(stepDescription); 
-                testStep.setTestData(getCellStringValue(row.getCell(6))); 
-                testStep.setExpectedResult(getCellStringValue(row.getCell(7))); 
-                testStep.setActualResult(getCellStringValue(row.getCell(8))); 
-                testStep.setIsHome("Home".equalsIgnoreCase(getCellStringValue(row.getCell(9)))); 
+                testStep.setDescription(stepDescription);
+                testStep.setTestData(getCellStringValue(row.getCell(6)));
+                testStep.setExpectedResult(getCellStringValue(row.getCell(7)));
+                testStep.setActualResult(getCellStringValue(row.getCell(8)));
+                testStep.setIsHome("Home".equalsIgnoreCase(getCellStringValue(row.getCell(9))));
                 testStep.setStatus("pending");
                 testStep.setRowIndex(rowIndex);
                 testStep.setCreatedAt(LocalDateTime.now());
@@ -314,6 +323,7 @@ public class ExcelParsingService {
                     sheet.getSheetName());
         }
     }
+
     private String normalizeUserStoryId(String userStoryId) {
         if (userStoryId == null || userStoryId.trim().isEmpty())
             return userStoryId;
@@ -324,6 +334,7 @@ public class ExcelParsingService {
             return id.substring(0, 2) + "_" + id.substring(2);
         return id;
     }
+
     private int findFirstDataRow(Sheet sheet) {
         for (int rowIndex = 0; rowIndex <= Math.min(10, sheet.getLastRowNum()); rowIndex++) {
             Row row = sheet.getRow(rowIndex);
@@ -341,6 +352,7 @@ public class ExcelParsingService {
         }
         return 1;
     }
+
     private boolean isHeaderRow(String cell1, String cell2) {
         if (cell1.isEmpty() && cell2.isEmpty()) {
             return false;
@@ -357,6 +369,7 @@ public class ExcelParsingService {
                 combined.contains("steps") ||
                 combined.contains("expected");
     }
+
     private boolean isEmptyRow(String... values) {
         for (String value : values) {
             if (value != null && !value.trim().isEmpty()) {
@@ -365,6 +378,7 @@ public class ExcelParsingService {
         }
         return true;
     }
+
     private String getCellStringValue(Cell cell) {
         if (cell == null) {
             return "";

@@ -17,111 +17,111 @@ public class Anasayfa {
         }
     }
 
-    @FindBy(xpath = "//span[text()='Register']")
+    @FindBy(xpath = "//*[@class='register inline-type']")
     public WebElement registerAs;
 
-    @FindBy(xpath = "//a[contains(text(),'Sign Up')]")
+    @FindBy(xpath = "//*[@name='register']")
     public WebElement signUpYeniKayit;
 
-    @FindBy(xpath = "//div[@class='wcfm-message email_error']")
+    @FindBy(xpath = "//*[@id='yith-wcwl-message']")
     public WebElement popUpMesajAs;
 
-    @FindBy(id = "reg_username")
+    @FindBy(xpath = "//*[@id='reg_username']")
     public WebElement usernameAs;
 
-    @FindBy(id = "reg_email")
+    @FindBy(xpath = "//*[@id='reg_email']")
     public WebElement emailAs;
 
-    @FindBy(id = "reg_password")
+    @FindBy(xpath = "//*[@id='reg_password']")
     public WebElement passwordSignUpAs;
 
-    @FindBy(id = "register-policy")
+    @FindBy(xpath = "//*[@id='register-policy']")
     public WebElement iAgreeButonAs;
 
-    @FindBy(xpath = "//p[contains(text(),'An account is already registered')]")
+    @FindBy(xpath = "(//*[@class='submit-status'])[2]")
     public WebElement kayitliBilgiHataAs;
 
-    @FindBy(xpath = "//div[@class='woocommerce-message']")
+    @FindBy(xpath = "//*[@id='status-1']")
     public WebElement registerValidationAs;
 
-    @FindBy(xpath = "//span[text()='Sign In']")
+    @FindBy(xpath = "//*[@class='w-icon-account']")
     public WebElement signInAs;
 
-    @FindBy(id = "username")
+    @FindBy(xpath = "//*[@id='username']")
     public WebElement signInEmail;
 
-    @FindBy(id = "password")
+    @FindBy(xpath = "//*[@id='password']")
     public WebElement signInPassword;
 
-    @FindBy(name = "login")
+    @FindBy(xpath = "//*[@name='login']")
     public WebElement loginButtonAs;
 
-    @FindBy(xpath = "//ul[@class='woocommerce-error']")
+    @FindBy(xpath = "//*[@id='login-error']")
     public WebElement loginErrorAs;
 
-    @FindBy(xpath = "//ul[@class='woocommerce-error']//li")
+    @FindBy(xpath = "//*[@id='login-fillout']")
     public WebElement loginFillOutAs;
 
-    @FindBy(xpath = "//h2[contains(text(),'My Account')]")
+    @FindBy(xpath = "//*[@class='page-title']")
     public WebElement myAccountYazisiAs;
 
-    @FindBy(xpath = "//span[text()='Sign Out']")
+    @FindBy(xpath = "//*[@class='login logout inline-type']")
     public WebElement signOutAs;
 
-    @FindBy(xpath = "//a[contains(text(),'Addresses')]")
+    @FindBy(xpath = "//a[contains(@href,'edit-address') or @id='link-addresses']")
     public WebElement adressesAs;
 
-    @FindBy(xpath = "//h3[contains(text(),'Addresses')]")
+    @FindBy(xpath = "//*[@class='icon-box-title text-normal']")
     public WebElement adressesYazi;
 
-    @FindBy(xpath = "//a[contains(@href,'billing') and contains(@class,'edit')]")
+    @FindBy(xpath = "(//*[@class='edit btn btn-link btn-primary btn-underline mb-4'])[1]")
     public WebElement billingAdresADD;
 
-    @FindBy(xpath = "//label[@for='billing_first_name']")
+    @FindBy(xpath = "//*[@for='billing_first_name']")
     public WebElement firstNameYazi;
 
-    @FindBy(id = "billing_first_name")
+    @FindBy(xpath = "//*[@name='billing_first_name']")
     public WebElement adressesFirstNameAs;
 
-    @FindBy(id = "billing_last_name")
+    @FindBy(xpath = "//*[@name='billing_last_name']")
     public WebElement adressesLastNameAs;
 
-    @FindBy(id = "billing_country")
+    @FindBy(xpath = "//*[@id='billing_state_field']")
     public WebElement stateCountAs;
 
-    @FindBy(xpath = "//input[@class='select2-search__field']")
+    @FindBy(xpath = "(//*[@aria-owns='select2-billing_state-results'])")
     public WebElement stateCounttextAs;
 
-    @FindBy(id = "billing_address_1")
+    @FindBy(xpath = "//*[@name='billing_address_1']")
     public WebElement streetAdressAs;
 
-    @FindBy(id = "billing_city")
+    @FindBy(xpath = "//*[@name='billing_city']")
     public WebElement townCityAs;
 
-    @FindBy(id = "billing_postcode")
+    @FindBy(xpath = "//*[@name='billing_postcode']")
     public WebElement postcode_zipAs;
 
-    @FindBy(id = "billing_phone")
+    @FindBy(xpath = "//*[@name='billing_phone']")
     public WebElement phoneAs;
 
-    @FindBy(name = "save_address")
+    @FindBy(xpath = "//*[@class='btn btn-dark btn-rounded btn-sm']")
     public WebElement saveAdressButonAs;
 
-    @FindBy(xpath = "//ul[@class='woocommerce-error']")
+    @FindBy(xpath = "//*[@class='woocommerce-error' or @id='billing-error']")
     public WebElement fieldErrorAs;
 
-    @FindBy(xpath = "//a[contains(@href,'billing') and contains(@class,'edit')]")
+    @FindBy(xpath = "//*[contains(@href,'billing') or @id='link-edit-billing']")
     public WebElement editBillingButonAs;
 
-    @FindBy(id = "billing_first_name")
+    @FindBy(xpath = "//*[@value='jüpiter']")
     public WebElement firstNameEditBilling;
 
-    @FindBy(id = "billing_last_name")
+    @FindBy(xpath = "//*[@value='neptün']")
     public WebElement lastnameEditBilling;
 
-    @FindBy(id = "billing_email")
+    @FindBy(xpath = "//*[@value='jossiel.lavante@feerock.com']")
     public WebElement emailValue2;
 
-    @FindBy(xpath = "//div[@class='woocommerce-message']")
+    @FindBy(xpath = "//*[@class='woocommerce-message' or @id='billing-success']")
     public WebElement addressSuccessMessageAs;
 }

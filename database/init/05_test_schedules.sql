@@ -1,30 +1,30 @@
 -- 05_test_schedules.sql
--- Bu dosya, test schedule'larıyla ilgili tabloları içerir
+-- This file contains tables related to test schedules
 
--- Önceki tabloların DROP edilmesi (eğer varsa)
+-- Dropping previous tables (if any)
 DROP TABLE IF EXISTS test_schedules CASCADE;
 
--- Test Schedules tablosu - Test zamanlama/schedule bilgilerini saklamak için
+-- Test Schedules table - To store test schedule information
 CREATE TABLE test_schedules (
     id BIGSERIAL PRIMARY KEY,
     project_id BIGINT NOT NULL,
-    title VARCHAR(255), -- Opsiyonel başlık
-    user_story_id VARCHAR(50) NOT NULL, -- US_01, US_02 gibi
-    test_case_ids TEXT[] NOT NULL, -- Test case ID'leri array olarak ["TC01", "TC02"]
-    start_time TIMESTAMP NOT NULL, -- Schedule başlangıç zamanı
-    end_time TIMESTAMP NOT NULL, -- Schedule bitiş zamanı
+    title VARCHAR(255), -- Optional title
+    user_story_id VARCHAR(50) NOT NULL, -- e.g. US_01, US_02
+    test_case_ids TEXT[] NOT NULL, -- Test case IDs as array ["TC01", "TC02"]
+    start_time TIMESTAMP NOT NULL, -- Schedule start time
+    end_time TIMESTAMP NOT NULL, -- Schedule end time
     schedule_type VARCHAR(20) NOT NULL DEFAULT 'once', -- once, daily, weekly, monthly
     status VARCHAR(20) NOT NULL DEFAULT 'scheduled', -- scheduled, running, completed, failed, paused, cancelled
-    created_by VARCHAR(100), -- Oluşturan kullanıcı
-    description TEXT, -- Opsiyonel açıklama
+    created_by VARCHAR(100), -- Creator user
+    description TEXT, -- Optional description
     
-    -- Zamanlama bilgileri
-    next_run_time TIMESTAMP, -- Bir sonraki çalışma zamanı
-    last_run_time TIMESTAMP, -- Son çalışma zamanı
-    last_test_run_id BIGINT, -- Son çalıştırılan test_run ID'si
+    -- Scheduling information
+    next_run_time TIMESTAMP, -- Next run time
+    last_run_time TIMESTAMP, -- Last run time
+    last_test_run_id BIGINT, -- Last executed test_run ID
     
-    -- Tekrar ayarları (JSON formatında - daily/weekly/monthly için)
-    repeat_settings JSONB, -- {"hour": 9, "minute": 0, "dayOfWeek": 1} gibi
+    -- Repeat settings (in JSON format - for daily/weekly/monthly)
+    repeat_settings JSONB, -- e.g. {"hour": 9, "minute": 0, "dayOfWeek": 1}
     
     -- Audit fields
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -35,7 +35,7 @@ CREATE TABLE test_schedules (
     FOREIGN KEY (last_test_run_id) REFERENCES test_runs(id) ON DELETE SET NULL
 );
 
--- Test schedules için indeksler
+-- Indexes for test schedules
 CREATE INDEX idx_test_schedules_project_id ON test_schedules (project_id);
 CREATE INDEX idx_test_schedules_user_story_id ON test_schedules (user_story_id);
 CREATE INDEX idx_test_schedules_status ON test_schedules (status);
@@ -43,7 +43,7 @@ CREATE INDEX idx_test_schedules_next_run_time ON test_schedules (next_run_time);
 CREATE INDEX idx_test_schedules_schedule_type ON test_schedules (schedule_type);
 CREATE INDEX idx_test_schedules_created_at ON test_schedules (created_at);
 
--- Schedule Execution History tablosu - Schedule çalışma geçmişini takip etmek için
+-- Schedule Execution History table - To track schedule execution history
 CREATE TABLE schedule_execution_history (
     id BIGSERIAL PRIMARY KEY,
     schedule_id BIGINT NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE schedule_execution_history (
     FOREIGN KEY (test_run_id) REFERENCES test_runs(id) ON DELETE CASCADE
 );
 
--- Schedule execution history için indeksler
+-- Indexes for schedule execution history
 CREATE INDEX idx_schedule_execution_schedule_id ON schedule_execution_history (schedule_id);
 CREATE INDEX idx_schedule_execution_test_run_id ON schedule_execution_history (test_run_id);
 CREATE INDEX idx_schedule_execution_time ON schedule_execution_history (execution_time);

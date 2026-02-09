@@ -1,4 +1,5 @@
 package com.vizja.testweb.tests.us04;
+
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 import com.vizja.testweb.pages.Us04.ShippingAddressPage;
@@ -7,6 +8,7 @@ import com.vizja.testweb.utilities.Driver;
 import com.vizja.testweb.utilities.ExtentReport;
 import com.vizja.testweb.utilities.ReusableMethods;
 import com.vizja.testweb.utilities.WebDriverManager;
+
 public class ShipphingAddressEditMethodClass extends ExtentReport {
         public void signIn() {
                 extentTest = extentReports.createTest("US04", "ShipphingAddressEdit");
@@ -49,4 +51,3 @@ public class ShipphingAddressEditMethodClass extends ExtentReport {
                 extentTest.info("EDİT YOUR SHİPPİNG ADDRESS BUTONUNA TIKLANDI");
         }
 }
-

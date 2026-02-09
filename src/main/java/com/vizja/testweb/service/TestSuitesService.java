@@ -1,18 +1,14 @@
 package com.vizja.testweb.service;
+
+import com.vizja.testweb.model.*;
+import com.vizja.testweb.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.vizja.testweb.model.ProductBacklogItem;
-import com.vizja.testweb.model.TestCase;
-import com.vizja.testweb.model.TestStep;
-import com.vizja.testweb.model.TestResult;
-import com.vizja.testweb.repository.ProductBacklogItemRepository;
-import com.vizja.testweb.repository.TestCaseRepository;
-import com.vizja.testweb.repository.TestStepRepository;
-import com.vizja.testweb.repository.TestResultRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
 @Service
 public class TestSuitesService {
     @Autowired
@@ -23,6 +19,7 @@ public class TestSuitesService {
     private TestStepRepository testStepRepository;
     @Autowired
     private TestResultRepository testResultRepository;
+
     public List<Map<String, Object>> getTestSuitesByProject(Long projectId) {
         List<ProductBacklogItem> backlogItems = productBacklogItemRepository.findByProjectId(projectId);
         List<TestCase> testCases = testCaseRepository.findByProjectId(projectId);
@@ -51,6 +48,7 @@ public class TestSuitesService {
         }
         return testSuites;
     }
+
     public List<Map<String, Object>> getTestCasesByUserStory(Long projectId, String userStoryId) {
         String normalizedRequestId = normalizeUserStoryId(userStoryId);
         List<TestCase> testCases = testCaseRepository.findByProjectId(projectId).stream()
@@ -60,12 +58,14 @@ public class TestSuitesService {
                 .map(this::convertTestCaseToMap)
                 .collect(Collectors.toList());
     }
+
     public List<Map<String, Object>> getTestStepsByTestCase(Long testCaseId) {
         List<TestStep> testSteps = testStepRepository.findByTestCaseIdOrderByStepNumber(testCaseId);
         return testSteps.stream()
                 .map(this::convertTestStepToMap)
                 .collect(Collectors.toList());
     }
+
     public Map<String, Object> runTestSuite(Long projectId, String userStoryId, boolean isHeadless, String browser) {
         Map<String, Object> result = new HashMap<>();
         result.put("userStoryId", userStoryId);
@@ -77,9 +77,11 @@ public class TestSuitesService {
                 "browser", browser));
         return result;
     }
+
     public Map<String, Object> runTestSuite(Long projectId, String userStoryId) {
         return runTestSuite(projectId, userStoryId, true, "chrome");
     }
+
     public Map<String, Object> runTestCase(Long projectId, Long testCaseId, boolean isHeadless, String browser) {
         Map<String, Object> result = new HashMap<>();
         result.put("testCaseId", testCaseId);
@@ -91,9 +93,11 @@ public class TestSuitesService {
                 "browser", browser));
         return result;
     }
+
     public Map<String, Object> runTestCase(Long projectId, Long testCaseId) {
         return runTestCase(projectId, testCaseId, true, "chrome");
     }
+
     public Map<String, Object> getTestSuitesStatistics(Long projectId) {
         List<TestCase> allTestCases = testCaseRepository.findByProjectId(projectId);
         List<ProductBacklogItem> backlogItems = productBacklogItemRepository.findByProjectId(projectId);
@@ -103,11 +107,12 @@ public class TestSuitesService {
         Map<String, Object> statusCounts = new HashMap<>();
         statusCounts.put("passed", 0);
         statusCounts.put("failed", 0);
-        statusCounts.put("pending", allTestCases.size()); 
+        statusCounts.put("pending", allTestCases.size());
         statusCounts.put("not_run", allTestCases.size());
         statistics.put("statusCounts", statusCounts);
         return statistics;
     }
+
     private String normalizeUserStoryId(String userStoryId) {
         if (userStoryId == null)
             return null;
@@ -119,6 +124,7 @@ public class TestSuitesService {
         }
         return userStoryId;
     }
+
     private String extractUserStoryName(String description) {
         if (description == null || description.trim().isEmpty()) {
             return "Unnamed User Story";
@@ -126,9 +132,10 @@ public class TestSuitesService {
         String[] lines = description.split("\n");
         String firstLine = lines[0].trim();
         firstLine = firstLine.replaceAll("^User registration to the Site \\(Customer\\)", "User Registration");
-        firstLine = firstLine.replaceAll("\\(.*?\\)$", "").trim(); 
+        firstLine = firstLine.replaceAll("\\(.*?\\)$", "").trim();
         return firstLine.length() > 50 ? firstLine.substring(0, 47) + "..." : firstLine;
     }
+
     private Map<String, Object> calculateStatusAndProgress(List<TestCase> testCases) {
         Map<String, Object> result = new HashMap<>();
         if (testCases.isEmpty()) {
@@ -148,6 +155,7 @@ public class TestSuitesService {
         result.put("duration", null);
         return result;
     }
+
     private Map<String, Object> convertTestCaseToMap(TestCase testCase) {
         Map<String, Object> testCaseMap = new HashMap<>();
         testCaseMap.put("id", testCase.getTestCaseId());
@@ -205,6 +213,7 @@ public class TestSuitesService {
         }
         return testCaseMap;
     }
+
     private Map<String, Object> convertTestStepToMap(TestStep step) {
         Map<String, Object> stepMap = new HashMap<>();
         stepMap.put("id", step.getId());
@@ -232,6 +241,7 @@ public class TestSuitesService {
         }
         return stepMap;
     }
+
     private String formatDuration(Long durationMs) {
         long durationSeconds = durationMs / 1000;
         long hours = durationSeconds / 3600;

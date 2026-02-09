@@ -1,12 +1,12 @@
 -- 01_create_schema.sql
--- Bu dosya, projeler ve Excel dosyalarıyla ilgili tabloları içerir
+-- This file contains tables related to projects and Excel files
 
--- Önceki tabloların DROP edilmesi (eğer varsa)
+-- Dropping previous tables (if any)
 DROP TABLE IF EXISTS excel_sheets CASCADE;
 DROP TABLE IF EXISTS project_excel_files CASCADE;
 DROP TABLE IF EXISTS projects CASCADE;
 
--- Projects tablosu - Projelerin ana tablosu
+-- Projects table - Main table for projects
 CREATE TABLE projects (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -18,11 +18,11 @@ CREATE TABLE projects (
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- Projeler için indeks oluşturma
+-- Creating indexes for projects
 CREATE INDEX idx_project_name ON projects (name);
 CREATE INDEX idx_project_owner_id ON projects (owner_id);
 
--- Proje Excel Dosyaları tablosu - Excel dosyalarını projelerle ilişkilendirmek için
+-- Project Excel Files table - To associate Excel files with projects
 CREATE TABLE project_excel_files (
     id BIGSERIAL PRIMARY KEY,
     project_id BIGINT NOT NULL,
@@ -41,12 +41,12 @@ CREATE TABLE project_excel_files (
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 
--- Excel dosyaları için indeksler
+-- Indexes for Excel files
 CREATE INDEX idx_excel_file_name ON project_excel_files (file_name);
 CREATE INDEX idx_excel_project_id ON project_excel_files (project_id);
 CREATE INDEX idx_excel_upload_date ON project_excel_files (upload_date);
 
--- Excel Sayfaları tablosu - Excel dosyalarındaki sayfaları takip etmek için
+-- Excel Sheets table - To track sheets in Excel files
 CREATE TABLE excel_sheets (
     id BIGSERIAL PRIMARY KEY,
     excel_file_id BIGINT NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE excel_sheets (
     FOREIGN KEY (excel_file_id) REFERENCES project_excel_files(id) ON DELETE CASCADE
 );
 
--- Excel sayfaları için indeksler
+-- Indexes for Excel sheets
 CREATE INDEX idx_sheet_excel_file_id ON excel_sheets (excel_file_id);
 CREATE INDEX idx_sheet_name ON excel_sheets (sheet_name);
 CREATE INDEX idx_sheet_type ON excel_sheets (sheet_type);

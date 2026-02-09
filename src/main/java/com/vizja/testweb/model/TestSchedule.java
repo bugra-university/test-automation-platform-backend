@@ -1,18 +1,20 @@
 package com.vizja.testweb.model;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.vladmihalcea.hibernate.type.array.StringArrayType;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
+import org.hibernate.annotations.*;
 import javax.persistence.*;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.*;
+
 @Entity
 @Table(name = "test_schedules")
 @TypeDefs({
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class),
-    @TypeDef(name = "string-array", typeClass = StringArrayType.class)
+        @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class),
+        @TypeDef(name = "string-array", typeClass = StringArrayType.class)
 })
 public class TestSchedule {
     @Id
@@ -60,18 +62,22 @@ public class TestSchedule {
     @Column(name = "updated_at", nullable = false)
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime updatedAt;
+
     public enum ScheduleType {
         ONCE, DAILY, WEEKLY, MONTHLY
     }
+
     public enum ScheduleStatus {
         SCHEDULED, RUNNING, COMPLETED, FAILED, PAUSED, CANCELLED
     }
+
     public TestSchedule() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-    public TestSchedule(Long projectId, String userStoryId, String[] testCaseIds, 
-                       LocalDateTime startTime, LocalDateTime endTime, ScheduleType scheduleType) {
+
+    public TestSchedule(Long projectId, String userStoryId, String[] testCaseIds,
+            LocalDateTime startTime, LocalDateTime endTime, ScheduleType scheduleType) {
         this();
         this.projectId = projectId;
         this.userStoryId = userStoryId;
@@ -79,125 +85,164 @@ public class TestSchedule {
         this.startTime = startTime;
         this.endTime = endTime;
         this.scheduleType = scheduleType;
-        this.nextRunTime = startTime; 
+        this.nextRunTime = startTime;
     }
+
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+
     public Long getId() {
         return id;
     }
+
     public void setId(Long id) {
         this.id = id;
     }
+
     public Long getProjectId() {
         return projectId;
     }
+
     public void setProjectId(Long projectId) {
         this.projectId = projectId;
     }
+
     public String getTitle() {
         return title;
     }
+
     public void setTitle(String title) {
         this.title = title;
     }
+
     public String getUserStoryId() {
         return userStoryId;
     }
+
     public void setUserStoryId(String userStoryId) {
         this.userStoryId = userStoryId;
     }
+
     public String[] getTestCaseIds() {
         return testCaseIds;
     }
+
     public void setTestCaseIds(String[] testCaseIds) {
         this.testCaseIds = testCaseIds;
     }
+
     public LocalDateTime getStartTime() {
         return startTime;
     }
+
     public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
     }
+
     public LocalDateTime getEndTime() {
         return endTime;
     }
+
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
+
     public ScheduleType getScheduleType() {
         return scheduleType;
     }
+
     public void setScheduleType(ScheduleType scheduleType) {
         this.scheduleType = scheduleType;
     }
+
     public ScheduleStatus getStatus() {
         return status;
     }
+
     public void setStatus(ScheduleStatus status) {
         this.status = status;
     }
+
     public String getCreatedBy() {
         return createdBy;
     }
+
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
     }
+
     public String getDescription() {
         return description;
     }
+
     public void setDescription(String description) {
         this.description = description;
     }
+
     public LocalDateTime getNextRunTime() {
         return nextRunTime;
     }
+
     public void setNextRunTime(LocalDateTime nextRunTime) {
         this.nextRunTime = nextRunTime;
     }
+
     public LocalDateTime getLastRunTime() {
         return lastRunTime;
     }
+
     public void setLastRunTime(LocalDateTime lastRunTime) {
         this.lastRunTime = lastRunTime;
     }
+
     public Long getLastTestRunId() {
         return lastTestRunId;
     }
+
     public void setLastTestRunId(Long lastTestRunId) {
         this.lastTestRunId = lastTestRunId;
     }
+
     public Map<String, Object> getRepeatSettings() {
         return repeatSettings;
     }
+
     public void setRepeatSettings(Map<String, Object> repeatSettings) {
         this.repeatSettings = repeatSettings;
     }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
+
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
     public boolean isRecurring() {
         return scheduleType != ScheduleType.ONCE;
     }
+
     public boolean isActive() {
         return status == ScheduleStatus.SCHEDULED || status == ScheduleStatus.RUNNING;
     }
+
     public boolean shouldRun() {
-        return status == ScheduleStatus.SCHEDULED && 
-               nextRunTime != null && 
-               LocalDateTime.now().isAfter(nextRunTime);
+        return status == ScheduleStatus.SCHEDULED &&
+                nextRunTime != null &&
+                LocalDateTime.now().isAfter(nextRunTime);
     }
+
     @Override
     public String toString() {
         return "TestSchedule{" +
@@ -210,4 +255,4 @@ public class TestSchedule {
                 ", nextRunTime=" + nextRunTime +
                 '}';
     }
-} 
+}

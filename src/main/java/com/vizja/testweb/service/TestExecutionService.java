@@ -1,26 +1,17 @@
 package com.vizja.testweb.service;
+
+import com.vizja.testweb.model.*;
+import com.vizja.testweb.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.testng.TestNG;
-import org.testng.xml.XmlSuite;
-import org.testng.xml.XmlTest;
-import org.testng.xml.XmlClass;
-import org.testng.xml.XmlInclude;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import com.vizja.testweb.model.TestCase;
-import com.vizja.testweb.model.TestRun;
-import com.vizja.testweb.model.TestResult;
-import com.vizja.testweb.model.TestExecutionMetadata;
-import com.vizja.testweb.repository.TestCaseRepository;
-import com.vizja.testweb.repository.TestRunRepository;
-import com.vizja.testweb.repository.TestResultRepository;
-import com.vizja.testweb.repository.TestExecutionMetadataRepository;
+import org.testng.TestNG;
+import org.testng.xml.*;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.io.IOException;
+import java.util.concurrent.*;
+
 @Service
 public class TestExecutionService {
     @Autowired
@@ -35,6 +26,7 @@ public class TestExecutionService {
     private StepTrackingService stepTrackingService;
     private final Map<String, TestExecutionStatus> runningTests = new ConcurrentHashMap<>();
     private final Map<Long, CopyOnWriteArrayList<SseEmitter>> projectEventStreams = new ConcurrentHashMap<>();
+
     public static class TestExecutionStatus {
         private String status;
         private LocalDateTime startTime;
@@ -42,76 +34,98 @@ public class TestExecutionService {
         private String testOutput;
         private boolean isHeadless;
         private String browser;
-        private Long testRunId; 
-        private Long testResultId; 
+        private Long testRunId;
+        private Long testResultId;
         private String errorMessage;
         private Long durationMs;
+
         public String getStatus() {
             return status;
         }
+
         public void setStatus(String status) {
             this.status = status;
         }
+
         public LocalDateTime getStartTime() {
             return startTime;
         }
+
         public void setStartTime(LocalDateTime startTime) {
             this.startTime = startTime;
         }
+
         public LocalDateTime getEndTime() {
             return endTime;
         }
+
         public void setEndTime(LocalDateTime endTime) {
             this.endTime = endTime;
         }
+
         public String getTestOutput() {
             return testOutput;
         }
+
         public void setTestOutput(String testOutput) {
             this.testOutput = testOutput;
         }
+
         public boolean isHeadless() {
             return isHeadless;
         }
+
         public void setHeadless(boolean headless) {
             isHeadless = headless;
         }
+
         public String getBrowser() {
             return browser;
         }
+
         public void setBrowser(String browser) {
             this.browser = browser;
         }
+
         public Long getTestRunId() {
             return testRunId;
         }
+
         public void setTestRunId(Long testRunId) {
             this.testRunId = testRunId;
         }
+
         public Long getTestResultId() {
             return testResultId;
         }
+
         public void setTestResultId(Long testResultId) {
             this.testResultId = testResultId;
         }
+
         public String getErrorMessage() {
             return errorMessage;
         }
+
         public void setErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
         }
+
         public Long getDurationMs() {
             return durationMs;
         }
+
         public void setDurationMs(Long durationMs) {
             this.durationMs = durationMs;
         }
     }
+
     public void registerEventStream(Long projectId, SseEmitter emitter) {
         projectEventStreams.computeIfAbsent(projectId, k -> new CopyOnWriteArrayList<>()).add(emitter);
         System.out.println("[SSE] Registered event stream for project " + projectId +
                 ". Total streams: " + projectEventStreams.get(projectId).size());
     }
+
     public void unregisterEventStream(Long projectId, SseEmitter emitter) {
         CopyOnWriteArrayList<SseEmitter> emitters = projectEventStreams.get(projectId);
         if (emitters != null) {
@@ -123,6 +137,7 @@ public class TestExecutionService {
                     ". Remaining streams: " + emitters.size());
         }
     }
+
     private void sendEventToClients(Long projectId, String eventName, Object data) {
         CopyOnWriteArrayList<SseEmitter> emitters = projectEventStreams.get(projectId);
         if (emitters != null && !emitters.isEmpty()) {
@@ -145,10 +160,12 @@ public class TestExecutionService {
             System.out.println("[SSE] ⚠️ Total registered projects: " + projectEventStreams.keySet());
         }
     }
+
     public CompletableFuture<Map<String, Object>> executeTestSuiteAsync(
             Long projectId, String userStoryId, boolean isHeadless, String browser) {
         return executeTestSuiteAsync(projectId, userStoryId, null, isHeadless, browser);
     }
+
     public CompletableFuture<Map<String, Object>> executeTestSuiteAsync(
             Long projectId, String userStoryId, String[] specificTestCaseIds, boolean isHeadless, String browser) {
         System.out.println("\n" + "=".repeat(80));
@@ -308,7 +325,7 @@ public class TestExecutionService {
                         TestResult testResult = new TestResult();
                         testResult.setTestRunId(testRun.getId());
                         testResult.setTestCaseId(testCase.getId());
-                        testResult.setStatus("PASS"); 
+                        testResult.setStatus("PASS");
                         testResult.setStartTime(status.getStartTime());
                         testResult.setEndTime(status.getEndTime());
                         testResult.setDurationMs(executionDurationMs);
@@ -346,6 +363,7 @@ public class TestExecutionService {
             }
         });
     }
+
     public CompletableFuture<Map<String, Object>> executeTestCaseAsync(
             Long projectId, String testCaseId, boolean isHeadless, String browser) {
         System.out.println("\n" + "=".repeat(60));
@@ -622,6 +640,7 @@ public class TestExecutionService {
             }
         });
     }
+
     public Map<String, Object> getExecutionStatus(String executionId) {
         TestExecutionStatus status = runningTests.get(executionId);
         if (status == null) {
@@ -645,6 +664,7 @@ public class TestExecutionService {
                 "browser", status.getBrowser()));
         return result;
     }
+
     public Map<String, Object> getTestRunStatus(Long testRunId) {
         Optional<TestRun> testRunOpt = testRunRepository.findById(testRunId);
         if (!testRunOpt.isPresent()) {
@@ -679,6 +699,7 @@ public class TestExecutionService {
         }).collect(java.util.stream.Collectors.toList()));
         return result;
     }
+
     public List<Map<String, Object>> getLatestTestRuns(Long projectId, int limit) {
         List<TestRun> testRuns = testRunRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
         return testRuns.stream()
@@ -709,9 +730,11 @@ public class TestExecutionService {
                 })
                 .collect(java.util.stream.Collectors.toList());
     }
+
     private String generateExecutionId(Long projectId, String identifier) {
         return projectId + "_" + identifier + "_" + System.currentTimeMillis();
     }
+
     private Map<String, Object> createExecutionResult(String executionId, TestExecutionStatus status, String message) {
         Map<String, Object> result = new HashMap<>();
         result.put("executionId", executionId);
@@ -719,13 +742,14 @@ public class TestExecutionService {
         result.put("startTime", status.getStartTime());
         result.put("endTime", status.getEndTime());
         result.put("message", message);
-        result.put("testRunId", status.getTestRunId()); 
-        result.put("testResultId", status.getTestResultId()); 
+        result.put("testRunId", status.getTestRunId());
+        result.put("testResultId", status.getTestResultId());
         result.put("configuration", Map.of(
                 "isHeadless", status.isHeadless(),
                 "browser", status.getBrowser()));
         return result;
     }
+
     private XmlSuite createTestSuite(String userStoryId, List<TestCase> testCases) {
         XmlSuite suite = new XmlSuite();
         suite.setName("UserStory_" + userStoryId);
@@ -764,6 +788,7 @@ public class TestExecutionService {
                 + testCases.size() + " test cases");
         return suite;
     }
+
     private XmlSuite createSingleTestCaseSuite(TestCase testCase) {
         XmlSuite suite = new XmlSuite();
         suite.setName("SingleTestCase_" + testCase.getTestCaseId());
@@ -789,6 +814,7 @@ public class TestExecutionService {
         }
         return suite;
     }
+
     private String normalizeUserStoryIdForMapping(String userStoryId) {
         if (userStoryId == null)
             return null;
@@ -796,6 +822,7 @@ public class TestExecutionService {
             return userStoryId.replace("_", "");
         return userStoryId;
     }
+
     private String normalizeUserStoryIdForLookup(String userStoryId) {
         if (userStoryId == null || userStoryId.trim().isEmpty())
             return userStoryId;
@@ -806,11 +833,13 @@ public class TestExecutionService {
             return id.substring(0, 2) + "_" + id.substring(2);
         return id;
     }
+
     private String normalizeTestCaseId(String testCaseId) {
         if (testCaseId == null || testCaseId.trim().isEmpty())
             return testCaseId;
         return testCaseId.trim().replace("_", "").toUpperCase();
     }
+
     private String mapTestCaseToTestClass(TestCase testCase) {
         String userStoryId = normalizeUserStoryIdForMapping(testCase.getUserStoryId());
         String testCaseId = testCase.getTestCaseId();
@@ -869,6 +898,7 @@ public class TestExecutionService {
         }
         return null;
     }
+
     private String mapTestCaseToMethod(TestCase testCase) {
         String userStoryId = normalizeUserStoryIdForMapping(testCase.getUserStoryId());
         String testCaseId = testCase.getTestCaseId();
@@ -972,7 +1002,7 @@ public class TestExecutionService {
                 case "TC03":
                     return "testCheckoutProcess";
                 case "TC04":
-                    return "testCheckoutProcess"; 
+                    return "testCheckoutProcess";
                 case "TC05":
                     return "testFirstNameRequired";
                 case "TC06":

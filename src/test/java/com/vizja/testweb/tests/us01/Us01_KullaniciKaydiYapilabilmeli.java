@@ -1,4 +1,5 @@
 package com.vizja.testweb.tests.us01;
+
 import com.github.javafaker.Faker;
 import org.testng.annotations.Test;
 import org.testng.annotations.AfterMethod;
@@ -9,6 +10,7 @@ import com.vizja.testweb.utilities.WebDriverManager;
 import com.vizja.testweb.utilities.ExtentReport;
 import com.vizja.testweb.utilities.ReusableMethods;
 import com.vizja.testweb.utilities.StepTracker;
+
 public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
     @Test
     public void tc01_KullaniciKayit() {
@@ -27,7 +29,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
             String url = ConfigReader.getProperty("allowerCommerceUrl");
             System.out.println("[TC01] Navigating to: " + url);
             WebDriverManager.getDriver().get(url);
-            ReusableMethods.bekle(2); 
+            ReusableMethods.bekle(2);
             softAssert.assertTrue(anasayfa.registerAs.isDisplayed(),
                     "Register link should be visible (is dummy site running at " + url + "?)");
             WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "test_start");
@@ -65,7 +67,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         StepTracker.executeStep("Validate the registration process", () -> {
             System.out.println("[TC01] Checking for signOut element...");
             try {
-                ReusableMethods.bekle(5); 
+                ReusableMethods.bekle(5);
                 boolean isSignOutVisible = anasayfa.signOutAs.isDisplayed();
                 System.out.println("[TC01] SignOut element visible: " + isSignOutVisible);
                 softAssert.assertTrue(isSignOutVisible);
@@ -76,12 +78,13 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
                 extentTest.info("ERROR: SignOut element not found - registration may have failed");
                 WebDriverManager.takeScreenshot("tc01_KullaniciKayit", "registration_failed");
                 softAssert.fail("Registration verification failed: " + e.getMessage());
-                throw e; 
+                throw e;
             }
         });
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc02_withoutUsernameNotRegister() {
         Faker faker = new Faker();
@@ -135,6 +138,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         softAssert.assertAll();
         extentTest.info("test completed successfully");
     }
+
     @Test
     public void tc03_withoutEmailNotRegister() {
         Faker faker = new Faker();
@@ -186,6 +190,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc04_withoutPasswordNotRegister() {
         Faker faker = new Faker();
@@ -236,6 +241,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc05_WithoutIagreeClickNotRegister() {
         Faker faker = new Faker();
@@ -286,6 +292,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc06_hataliemailileKayitOlma() {
         Faker faker = new Faker();
@@ -336,6 +343,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc07_withoutComEmailIleKayitOlma() {
         Faker faker = new Faker();
@@ -386,6 +394,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc08_sekizChrctrPasswordkayit() {
         Faker faker = new Faker();
@@ -437,6 +446,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc09_dokuzChrctrPasswordkayit() {
         Faker faker = new Faker();
@@ -488,6 +498,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc10_yediChrctrPasswordkayitOlma() {
         Faker faker = new Faker();
@@ -540,6 +551,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc11_passwordSadeceRakamlaKayitOlma() {
         Faker faker = new Faker();
@@ -570,7 +582,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
             extentTest.info("yeni bir email girildi");
         });
         StepTracker.executeStep("Enter password with digits only", () -> {
-            anasayfa.passwordSignUpAs.sendKeys("123456789012"); 
+            anasayfa.passwordSignUpAs.sendKeys("123456789012");
             extentTest.info("sadece rakamlardan oluşan şifre girildi");
         });
         StepTracker.executeStep("I agree to privacy policy check box", () -> {
@@ -592,6 +604,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc12_buyukkucukHarfRakamUsernameKayit() {
         Faker faker = new Faker();
@@ -642,6 +655,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @Test
     public void tc13_usernameOzelkarakterKayit() {
         Faker faker = new Faker();
@@ -693,6 +707,7 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         extentTest.info("test completed successfully");
         softAssert.assertAll();
     }
+
     @AfterMethod
     public void tearDown() {
         System.out.println("[AfterMethod] Cleaning up browser...");
@@ -705,4 +720,3 @@ public class Us01_KullaniciKaydiYapilabilmeli extends ExtentReport {
         }
     }
 }
-

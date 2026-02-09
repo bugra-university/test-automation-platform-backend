@@ -1,13 +1,15 @@
 package com.vizja.testweb.security;
+
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import javax.crypto.SecretKey;
 import java.util.Date;
+
 @Component
 public class JwtUtils {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
@@ -15,9 +17,11 @@ public class JwtUtils {
     private String jwtSecret;
     @Value("${app.jwtExpirationMs:86400000}")
     private int jwtExpirationMs;
+
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
+
     public String generateJwtToken(Authentication authentication) {
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         return Jwts.builder()
@@ -27,6 +31,7 @@ public class JwtUtils {
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
+
     public String getUserNameFromJwtToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
@@ -35,6 +40,7 @@ public class JwtUtils {
                 .getBody()
                 .getSubject();
     }
+
     public boolean validateJwtToken(String authToken) {
         try {
             Jwts.parserBuilder()
@@ -56,4 +62,3 @@ public class JwtUtils {
         return false;
     }
 }
-

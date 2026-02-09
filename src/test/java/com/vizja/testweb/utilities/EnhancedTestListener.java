@@ -1,4 +1,5 @@
 package com.vizja.testweb.utilities;
+
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 import org.testng.ITestContext;
@@ -10,10 +11,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
 public class EnhancedTestListener implements ITestListener, ISuiteListener {
     private static final Map<String, TestExecutionData> executionData = new ConcurrentHashMap<>();
     private static final ThreadLocal<String> currentTestName = new ThreadLocal<>();
     private static final ThreadLocal<LocalDateTime> testStartTime = new ThreadLocal<>();
+
     public static class TestExecutionData {
         private String testName;
         private String className;
@@ -26,73 +29,96 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         private String screenshotPath;
         private String browserInfo;
         private long durationMs;
+
         public String getTestName() {
             return testName;
         }
+
         public void setTestName(String testName) {
             this.testName = testName;
         }
+
         public String getClassName() {
             return className;
         }
+
         public void setClassName(String className) {
             this.className = className;
         }
+
         public String getMethodName() {
             return methodName;
         }
+
         public void setMethodName(String methodName) {
             this.methodName = methodName;
         }
+
         public String getStatus() {
             return status;
         }
+
         public void setStatus(String status) {
             this.status = status;
         }
+
         public LocalDateTime getStartTime() {
             return startTime;
         }
+
         public void setStartTime(LocalDateTime startTime) {
             this.startTime = startTime;
         }
+
         public LocalDateTime getEndTime() {
             return endTime;
         }
+
         public void setEndTime(LocalDateTime endTime) {
             this.endTime = endTime;
         }
+
         public String getErrorMessage() {
             return errorMessage;
         }
+
         public void setErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
         }
+
         public String getStackTrace() {
             return stackTrace;
         }
+
         public void setStackTrace(String stackTrace) {
             this.stackTrace = stackTrace;
         }
+
         public String getScreenshotPath() {
             return screenshotPath;
         }
+
         public void setScreenshotPath(String screenshotPath) {
             this.screenshotPath = screenshotPath;
         }
+
         public String getBrowserInfo() {
             return browserInfo;
         }
+
         public void setBrowserInfo(String browserInfo) {
             this.browserInfo = browserInfo;
         }
+
         public long getDurationMs() {
             return durationMs;
         }
+
         public void setDurationMs(long durationMs) {
             this.durationMs = durationMs;
         }
     }
+
     @Override
     public void onStart(ITestContext context) {
         System.out.println("\n" + "=".repeat(80));
@@ -109,6 +135,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             System.err.println("❌ Failed to initialize WebDriver: " + e.getMessage());
         }
     }
+
     @Override
     public void onTestStart(ITestResult result) {
         String testName = getTestIdentifier(result);
@@ -175,6 +202,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             }
         }
     }
+
     @Override
     public void onTestSuccess(ITestResult result) {
         String testName = getTestIdentifier(result);
@@ -195,6 +223,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         }
         cleanupThreadLocals();
     }
+
     @Override
     public void onTestFailure(ITestResult result) {
         String testName = getTestIdentifier(result);
@@ -232,6 +261,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         }
         cleanupThreadLocals();
     }
+
     @Override
     public void onTestSkipped(ITestResult result) {
         String testName = getTestIdentifier(result);
@@ -260,6 +290,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         }
         cleanupThreadLocals();
     }
+
     @Override
     public void onFinish(ITestContext context) {
         System.out.println("\n" + "=".repeat(80));
@@ -284,6 +315,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             System.err.println("❌ WebDriver cleanup failed: " + e.getMessage());
         }
     }
+
     @Override
     public void onStart(ISuite suite) {
         System.out.println("\n" + "🎭 STARTING TEST SUITE: " + suite.getName());
@@ -291,19 +323,23 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         System.out.println("Parallel Mode: " + suite.getXmlSuite().getParallel());
         System.out.println("Thread Count: " + suite.getXmlSuite().getThreadCount());
     }
+
     @Override
     public void onFinish(ISuite suite) {
         System.out.println("🎭 FINISHED TEST SUITE: " + suite.getName());
         WebDriverManager.quitAllDrivers();
         printExecutionSummary();
     }
+
     private String getTestIdentifier(ITestResult result) {
         return result.getTestClass().getName() + "." + result.getMethod().getMethodName();
     }
+
     private void cleanupThreadLocals() {
         currentTestName.remove();
         testStartTime.remove();
     }
+
     private String formatDuration(long durationMs) {
         if (durationMs < 1000) {
             return durationMs + "ms";
@@ -315,12 +351,14 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             return String.format("%dm %ds", minutes, seconds);
         }
     }
+
     private String getStackTrace(Throwable throwable) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         throwable.printStackTrace(pw);
         return sw.toString();
     }
+
     private void printExecutionSummary() {
         if (executionData.isEmpty()) {
             return;
@@ -342,12 +380,15 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         }
         System.out.println("=".repeat(100));
     }
+
     public static Map<String, TestExecutionData> getExecutionData() {
         return new ConcurrentHashMap<>(executionData);
     }
+
     public static void clearExecutionData() {
         executionData.clear();
     }
+
     public static String takeTestScreenshot(String stepDescription) {
         String testName = currentTestName.get();
         if (testName == null) {
@@ -355,6 +396,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
         }
         return WebDriverManager.takeScreenshot(testName, stepDescription);
     }
+
     private Long getProjectIdFromSystemProperty() {
         try {
             String projectIdStr = System.getProperty("test.projectId");
@@ -363,6 +405,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             return null;
         }
     }
+
     private Long getTestCaseIdFromSystemProperty() {
         try {
             String testCaseIdStr = System.getProperty("test.testCaseDbId");
@@ -371,6 +414,7 @@ public class EnhancedTestListener implements ITestListener, ISuiteListener {
             return null;
         }
     }
+
     private String getExecutionIdFromSystemProperty() {
         return System.getProperty("test.executionId");
     }

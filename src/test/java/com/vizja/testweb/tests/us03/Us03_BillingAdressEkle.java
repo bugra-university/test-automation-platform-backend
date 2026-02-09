@@ -1,4 +1,5 @@
 package com.vizja.testweb.tests.us03;
+
 import com.github.javafaker.Faker;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -12,16 +13,19 @@ import com.vizja.testweb.utilities.Driver;
 import com.vizja.testweb.utilities.ReusableMethods;
 import com.vizja.testweb.utilities.StepTracker;
 import com.vizja.testweb.utilities.WebDriverManager;
+
 public class Us03_BillingAdressEkle {
         private static WebDriver driver() {
                 return WebDriverManager.isDriverReady() ? WebDriverManager.getDriver() : Driver.getDriver();
         }
+
         private static String testSiteUrl() {
                 String url = ConfigReader.getProperty("testSiteUrl");
                 if (url == null || url.trim().isEmpty())
                         throw new IllegalStateException("testSiteUrl is not set in configuration.properties");
                 return url.trim();
         }
+
         @Test
         public void tc01_billingAddressSavedWhenAllFieldsFilled() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -86,6 +90,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc02_saveAddressCannotBeDoneWithoutCountryRegion() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -144,6 +149,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc03_saveAddressCannotBeDoneWithoutStreet() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -199,6 +205,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc04_saveAddressCannotBeDoneWithoutTownCity() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -251,6 +258,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc05_saveAddressCannotBeDoneWithoutState() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -299,6 +307,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc06_saveAddressCannotBeDoneWithoutZIP() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -355,6 +364,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc07_saveAddressCannotBeDoneWithoutPhone() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -405,6 +415,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc08_saveAddressCannotBeDoneWhenAllFieldsEmpty() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -439,6 +450,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc09_firstNameLastNameEmailAutoFilledWhenEditing() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -484,7 +496,7 @@ public class Us03_BillingAdressEkle {
                 StepTracker.executeStep("Verify First name, Last name, Email still show correct auto values", () -> {
                         ReusableMethods.bekle(2);
                         anasayfa.adressesAs.click();
-                        ReusableMethods.bekle(5); 
+                        ReusableMethods.bekle(5);
                         actions.sendKeys(Keys.PAGE_DOWN).perform();
                         ReusableMethods.bekle(2);
                         JavascriptExecutor js = (JavascriptExecutor) driver();
@@ -498,6 +510,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc10_addressChangedSuccessfullyMessageDisplayed() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -552,6 +565,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc11_saveAddressWithInvalidZIPRejected() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -609,6 +623,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc12_saveAddressWithInvalidPhoneRejected() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -666,6 +681,7 @@ public class Us03_BillingAdressEkle {
                 if (!WebDriverManager.isDriverReady())
                         Driver.closeDriver();
         }
+
         @Test
         public void tc13_billingAddressAddedBySaveWhenFormValid() {
                 Anasayfa anasayfa = new Anasayfa();
@@ -736,4 +752,3 @@ public class Us03_BillingAdressEkle {
                         Driver.closeDriver();
         }
 }
-

@@ -1,15 +1,16 @@
 package com.vizja.testweb.service;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import com.vizja.testweb.model.TestStep;
 import com.vizja.testweb.repository.TestCaseRepository;
 import com.vizja.testweb.repository.TestStepRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.io.IOException;
+import java.util.concurrent.*;
+
 @Service
 public class StepTrackingService {
     @Autowired
@@ -18,6 +19,7 @@ public class StepTrackingService {
     private TestCaseRepository testCaseRepository;
     private final Map<String, StepExecutionData> runningSteps = new ConcurrentHashMap<>();
     private final Map<Long, CopyOnWriteArrayList<SseEmitter>> stepEventStreams = new ConcurrentHashMap<>();
+
     public static class StepExecutionData {
         private Long testCaseId;
         private Integer stepNumber;
@@ -28,66 +30,86 @@ public class StepTrackingService {
         private String errorMessage;
         private Long durationMs;
         private String executionId;
+
         public Long getTestCaseId() {
             return testCaseId;
         }
+
         public void setTestCaseId(Long testCaseId) {
             this.testCaseId = testCaseId;
         }
+
         public Integer getStepNumber() {
             return stepNumber;
         }
+
         public void setStepNumber(Integer stepNumber) {
             this.stepNumber = stepNumber;
         }
+
         public String getStepDescription() {
             return stepDescription;
         }
+
         public void setStepDescription(String stepDescription) {
             this.stepDescription = stepDescription;
         }
+
         public String getStatus() {
             return status;
         }
+
         public void setStatus(String status) {
             this.status = status;
         }
+
         public LocalDateTime getStartTime() {
             return startTime;
         }
+
         public void setStartTime(LocalDateTime startTime) {
             this.startTime = startTime;
         }
+
         public LocalDateTime getEndTime() {
             return endTime;
         }
+
         public void setEndTime(LocalDateTime endTime) {
             this.endTime = endTime;
         }
+
         public String getErrorMessage() {
             return errorMessage;
         }
+
         public void setErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
         }
+
         public Long getDurationMs() {
             return durationMs;
         }
+
         public void setDurationMs(Long durationMs) {
             this.durationMs = durationMs;
         }
+
         public String getExecutionId() {
             return executionId;
         }
+
         public void setExecutionId(String executionId) {
             this.executionId = executionId;
         }
     }
+
     public void registerStepEventStream(Long projectId, SseEmitter emitter) {
         stepEventStreams.computeIfAbsent(projectId, k -> new CopyOnWriteArrayList<>()).add(emitter);
         System.out.println("[StepTracking] Registered step event stream for project " + projectId +
                 ". Total streams: " + stepEventStreams.get(projectId).size());
     }
+
     public void unregisterStepEventStream(Long projectId, SseEmitter emitter) {
         CopyOnWriteArrayList<SseEmitter> emitters = stepEventStreams.get(projectId);
         if (emitters != null) {
@@ -99,6 +121,7 @@ public class StepTrackingService {
                     ". Remaining streams: " + emitters.size());
         }
     }
+
     private void sendStepEventToClients(Long projectId, String eventName, Object data) {
         CopyOnWriteArrayList<SseEmitter> emitters = stepEventStreams.get(projectId);
         if (emitters != null && !emitters.isEmpty()) {
@@ -117,6 +140,7 @@ public class StepTrackingService {
             }
         }
     }
+
     public void startStep(Long projectId, Long testCaseId, Integer stepNumber, String stepDescription,
             String executionId) {
         String stepKey = generateStepKey(testCaseId, stepNumber);
@@ -140,6 +164,7 @@ public class StepTrackingService {
         testCaseRepository.findById(testCaseId).ifPresent(tc -> payload.put("testCaseIdStr", tc.getTestCaseId()));
         sendStepEventToClients(projectId, "step_started", payload);
     }
+
     public void completeStep(Long projectId, Long testCaseId, Integer stepNumber, String executionId) {
         String stepKey = generateStepKey(testCaseId, stepNumber);
         StepExecutionData stepData = runningSteps.get(stepKey);
@@ -165,6 +190,7 @@ public class StepTrackingService {
             runningSteps.remove(stepKey);
         }
     }
+
     public void failStep(Long projectId, Long testCaseId, Integer stepNumber, String errorMessage, String executionId) {
         String stepKey = generateStepKey(testCaseId, stepNumber);
         StepExecutionData stepData = runningSteps.get(stepKey);
@@ -191,6 +217,7 @@ public class StepTrackingService {
             runningSteps.remove(stepKey);
         }
     }
+
     public void resetStepsForTestCase(Long testCaseId) {
         System.out.println("[StepTracking] Resetting all steps for test case " + testCaseId + " to pending");
         List<TestStep> steps = testStepRepository.findByTestCaseIdOrderByStepNumber(testCaseId);
@@ -199,6 +226,7 @@ public class StepTrackingService {
             testStepRepository.save(step);
         }
     }
+
     public void markRemainingRunningStepsAsCompleted(Long testCaseId, String finalStatus) {
         if (!"passed".equals(finalStatus) && !"failed".equals(finalStatus)) {
             finalStatus = "passed";
@@ -221,18 +249,22 @@ public class StepTrackingService {
                     + " for test case " + testCaseId);
         }
     }
+
     public StepExecutionData getStepExecution(Long testCaseId, Integer stepNumber) {
         String stepKey = generateStepKey(testCaseId, stepNumber);
         return runningSteps.get(stepKey);
     }
+
     public List<StepExecutionData> getRunningStepsForTestCase(Long testCaseId) {
         return runningSteps.values().stream()
                 .filter(step -> step.getTestCaseId().equals(testCaseId))
                 .collect(java.util.stream.Collectors.toList());
     }
+
     private String generateStepKey(Long testCaseId, Integer stepNumber) {
         return testCaseId + "_step_" + stepNumber;
     }
+
     private void updateStepInDatabase(Long testCaseId, Integer stepNumber, String status, LocalDateTime endTime,
             Long durationMs) {
         try {

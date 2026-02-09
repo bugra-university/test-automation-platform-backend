@@ -10,7 +10,7 @@ import java.util.HashMap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class StepTracker {
-    private static final String BASE_URL = "http://localhost:8080/api/projects";
+    private static final String BASE_URL = "http://localhost:8081/api/projects";
     private static final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .build();

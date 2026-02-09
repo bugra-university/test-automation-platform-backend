@@ -1,4 +1,5 @@
 package com.vizja.testweb.tests.us04;
+
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
@@ -11,6 +12,7 @@ import com.vizja.testweb.utilities.Driver;
 import com.vizja.testweb.utilities.ExtentReport;
 import com.vizja.testweb.utilities.ReusableMethods;
 import com.vizja.testweb.utilities.WebDriverManager;
+
 public class Tc01 extends ExtentReport {
         @Test
         public void test01() {
@@ -72,4 +74,3 @@ public class Tc01 extends ExtentReport {
                 extentTest.info("ADDRESS CHANGED SUCCESSFULLY. MESAJININ CIKTIGI DOGRULANDI");
         }
 }
-
