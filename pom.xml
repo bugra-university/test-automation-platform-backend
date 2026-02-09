@@ -11,16 +11,16 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.project_team09</groupId>
-    <artifactId>project_team09</artifactId>
+    <groupId>com.vizja</groupId>
+    <artifactId>testweb</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>Project Team 09 Test Automation Platform</name>
+    <name>Vizja Testweb - Test Automation Platform</name>
     <description>Test Automation Platform with Web Interface and API</description>
     <properties>
         <java.version>11</java.version>
         <testng.version>7.7.1</testng.version>
         <selenium.version>4.8.3</selenium.version>
-        <start-class>com.project_team09.Application</start-class>
+        <start-class>com.vizja.testweb.Application</start-class>
     </properties>
     
     <dependencies>
@@ -111,21 +111,13 @@
             <version>5.4.1</version>
         </dependency>
         
-        <!-- Apache HttpClient5 for WebDriverManager -->
+        <!-- Apache HttpClient 5 for WebDriverManager -->
         <dependency>
             <groupId>org.apache.httpcomponents.client5</groupId>
             <artifactId>httpclient5</artifactId>
             <version>5.2.1</version>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/junit/junit -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-            <scope>test</scope>
-        </dependency>
-
+        
         <!-- https://mvnrepository.com/artifact/com.github.javafaker/javafaker -->
         <dependency>
             <groupId>com.github.javafaker</groupId>
@@ -153,20 +145,6 @@
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-api -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>2.17.2</version>
-        </dependency>
-
-
-        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>2.17.2</version>
-        </dependency>
         <!-- Database -->
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -180,18 +158,6 @@
             <version>2.21.1</version>
         </dependency>
         
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>5.0.1</version>
-        </dependency>
-        
-        <!-- Reflections - For discovering test classes -->
-    <dependency>
-        <groupId>org.reflections</groupId>
-        <artifactId>reflections</artifactId>
-        <version>0.10.2</version>
-    </dependency>
     </dependencies>
     
     <build>
@@ -266,9 +232,9 @@
                                 <resource>
                                     <directory>${project.build.testOutputDirectory}</directory>
                                     <includes>
-                                        <include>project_team09/tests/**/*.class</include>
-                                        <include>project_team09/pages/**/*.class</include>
-                                        <include>project_team09/utilities/**/*.class</include>
+                                        <include>com/vizja/testweb/tests/**/*.class</include>
+                                        <include>com/vizja/testweb/pages/**/*.class</include>
+                                        <include>com/vizja/testweb/utilities/**/*.class</include>
                                     </includes>
                                 </resource>
                             </resources>

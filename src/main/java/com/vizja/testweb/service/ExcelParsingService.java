@@ -1,0 +1,414 @@
+package com.vizja.testweb.service;
+import com.vizja.testweb.model.*;
+import com.vizja.testweb.repository.*;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.*;
+@Service
+public class ExcelParsingService {
+    private static final Logger logger = LoggerFactory.getLogger(ExcelParsingService.class);
+    @Autowired
+    private ExcelFileRepository excelFileRepository;
+    @Autowired
+    private ExcelSheetRepository excelSheetRepository;
+    @Autowired
+    private ProductBacklogItemRepository productBacklogItemRepository;
+    @Autowired
+    private TestCaseRepository testCaseRepository;
+    @Autowired
+    private TestStepRepository testStepRepository;
+    private static final String UPLOAD_DIR = "uploads/excel-files/";
+    public String parseExcelFile(MultipartFile file, Project project) {
+        logger.info("Starting Excel parsing for project: {} with file: {}", project.getName(),
+                file.getOriginalFilename());
+        try {
+            cleanExistingProjectData(project);
+            String filePath = saveFilePhysically(file);
+            ExcelFile excelFile = createExcelFileRecord(file, project, filePath);
+            parseExcelContent(file, project, excelFile);
+            logger.info("Excel parsing completed successfully for project: {}", project.getName());
+            return "Excel file parsed and saved successfully";
+        } catch (Exception e) {
+            logger.error("Error parsing Excel file for project: {}", project.getName(), e);
+            throw new RuntimeException("Failed to parse Excel file: " + e.getMessage(), e);
+        }
+    }
+    public void cleanExistingProjectData(Project project) {
+        logger.info("Cleaning existing data for project: {}", project.getName());
+        testStepRepository.deleteByProjectId(project.getId());
+        testCaseRepository.deleteByProjectId(project.getId());
+        productBacklogItemRepository.deleteByProjectId(project.getId());
+        excelSheetRepository.deleteByProjectId(project.getId());
+        excelFileRepository.deleteByProjectId(project.getId());
+        logger.info("Existing data cleaned for project: {}", project.getName());
+    }
+    private String saveFilePhysically(MultipartFile file) throws IOException {
+        File uploadDir = new File(UPLOAD_DIR);
+        if (!uploadDir.exists()) {
+            uploadDir.mkdirs();
+        }
+        String originalFilename = file.getOriginalFilename();
+        String uniqueFilename = UUID.randomUUID().toString() + "_" + originalFilename;
+        String filePath = UPLOAD_DIR + uniqueFilename;
+        File destinationFile = new File(filePath);
+        try (FileOutputStream fos = new FileOutputStream(destinationFile)) {
+            fos.write(file.getBytes());
+        }
+        logger.info("File saved physically at: {}", filePath);
+        return filePath;
+    }
+    private ExcelFile createExcelFileRecord(MultipartFile file, Project project, String filePath) {
+        ExcelFile excelFile = new ExcelFile();
+        excelFile.setProject(project);
+        excelFile.setFileName(file.getOriginalFilename());
+        excelFile.setOriginalFileName(file.getOriginalFilename());
+        excelFile.setFilePath(filePath);
+        excelFile.setFileSize(file.getSize());
+        excelFile.setUploadDate(LocalDateTime.now());
+        excelFile = excelFileRepository.save(excelFile);
+        logger.info("Excel file record created with ID: {}", excelFile.getId());
+        return excelFile;
+    }
+    private void parseExcelContent(MultipartFile file, Project project, ExcelFile excelFile) throws IOException {
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            logger.info("Excel file has {} sheets", workbook.getNumberOfSheets());
+            for (int i = 0; i < workbook.getNumberOfSheets(); i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                String sheetName = sheet.getSheetName();
+                logger.info("Processing sheet: {} (index: {})", sheetName, i);
+                ExcelSheet excelSheet = createExcelSheetRecord(excelFile, sheetName, i);
+                String sheetType = excelSheet.getSheetType();
+                if ("BACKLOG".equals(sheetType)) {
+                    parseBacklogSheet(sheet, project, excelSheet);
+                } else if ("TEST_CASES".equals(sheetType)) {
+                    parseTestCaseSheet(sheet, project, excelSheet);
+                } else {
+                    logger.info("Sheet '{}' has unknown type '{}', skipping", sheetName, sheetType);
+                }
+            }
+        }
+    }
+    private ExcelSheet createExcelSheetRecord(ExcelFile excelFile, String sheetName, int sheetIndex) {
+        ExcelSheet excelSheet = new ExcelSheet();
+        excelSheet.setExcelFile(excelFile);
+        excelSheet.setSheetName(sheetName);
+        excelSheet.setSheetIndex(sheetIndex);
+        String sheetType = determineSheetType(excelFile, sheetName, sheetIndex);
+        excelSheet.setSheetType(sheetType);
+        excelSheet = excelSheetRepository.save(excelSheet);
+        logger.info("Excel sheet record created: {} (type: {}) with ID: {}", sheetName, sheetType, excelSheet.getId());
+        return excelSheet;
+    }
+    private String determineSheetType(ExcelFile excelFile, String sheetName, int sheetIndex) {
+        String nameLower = sheetName.trim().toLowerCase();
+        if (nameLower.contains("backlog")) {
+            return "BACKLOG";
+        }
+        if (nameLower.matches("us[_\\s]?\\d+") || nameLower.contains("us")) {
+            return "TEST_CASES";
+        }
+        if (nameLower.contains("test") || nameLower.contains("case")) {
+            return "TEST_CASES";
+        }
+        try {
+            java.io.File file = new java.io.File(excelFile.getFilePath());
+            if (file.exists()) {
+                try (Workbook workbook = new XSSFWorkbook(new java.io.FileInputStream(file))) {
+                    Sheet sheet = workbook.getSheetAt(sheetIndex);
+                    if (sheet != null && sheet.getPhysicalNumberOfRows() > 0) {
+                        Row headerRow = sheet.getRow(0);
+                        if (headerRow != null) {
+                            String firstCell = getCellStringValue(headerRow.getCell(0));
+                            String secondCell = getCellStringValue(headerRow.getCell(1));
+                            if ("User ID".equalsIgnoreCase(firstCell)
+                                    && "Description".toLowerCase().contains(secondCell.toLowerCase())) {
+                                return "BACKLOG";
+                            }
+                            boolean hasPreCondition = false;
+                            boolean hasSteps = false;
+                            for (int cellIndex = 0; cellIndex < headerRow.getLastCellNum(); cellIndex++) {
+                                String cellValue = getCellStringValue(headerRow.getCell(cellIndex));
+                                if (cellValue.toLowerCase().contains("pre-condition") ||
+                                        cellValue.toLowerCase().contains("precondition") ||
+                                        cellValue.toLowerCase().contains("pre condition")) {
+                                    hasPreCondition = true;
+                                }
+                                if (cellValue.toLowerCase().contains("steps") ||
+                                        cellValue.toLowerCase().contains("step")) {
+                                    hasSteps = true;
+                                }
+                            }
+                            if (hasPreCondition && hasSteps) {
+                                return "TEST_CASES";
+                            }
+                            if ("US ID".equalsIgnoreCase(firstCell) && "TC ID".equalsIgnoreCase(secondCell)) {
+                                return "TEST_CASES";
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Could not determine sheet type by content for sheet: {}", sheetName, e);
+        }
+        return "UNKNOWN";
+    }
+    private void parseBacklogSheet(Sheet sheet, Project project, ExcelSheet excelSheet) {
+        logger.info("Parsing backlog sheet: {}", sheet.getSheetName());
+        List<ProductBacklogItem> backlogItems = new ArrayList<>();
+        int dataRowCount = 0;
+        int skippedRowCount = 0;
+        int firstDataRow = findFirstDataRow(sheet);
+        logger.info("First data row found at index: {}", firstDataRow);
+        for (int rowIndex = firstDataRow; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null)
+                continue;
+            String userId = getCellStringValue(row.getCell(0));
+            String description = getCellStringValue(row.getCell(1));
+            if (isEmptyRow(userId, description)) {
+                skippedRowCount++;
+                continue;
+            }
+            logger.debug("Processing backlog row {}: userId='{}', description='{}'",
+                    rowIndex + 1, userId, description);
+            ProductBacklogItem item = new ProductBacklogItem();
+            item.setProject(project);
+            item.setExcelSheet(excelSheet);
+            item.setUserStoryId(normalizeUserStoryId(userId));
+            item.setDescription(description);
+            item.setAcceptanceCriteria(getCellStringValue(row.getCell(2)));
+            item.setHome(getCellStringValue(row.getCell(3)));
+            item.setValidation(getCellStringValue(row.getCell(4)));
+            item.setRowIndex(rowIndex);
+            item.setCreatedAt(LocalDateTime.now());
+            backlogItems.add(item);
+            dataRowCount++;
+        }
+        if (!backlogItems.isEmpty()) {
+            productBacklogItemRepository.saveAll(backlogItems);
+            logger.info("Saved {} backlog items (skipped {} empty rows)", dataRowCount, skippedRowCount);
+        } else {
+            logger.warn("No backlog items found in sheet: {}", sheet.getSheetName());
+        }
+    }
+    private void parseTestCaseSheet(Sheet sheet, Project project, ExcelSheet excelSheet) {
+        logger.info("Parsing test case sheet: {}", sheet.getSheetName());
+        Map<String, TestCase> testCaseMap = new HashMap<>();
+        List<TestStep> testSteps = new ArrayList<>();
+        int skippedRowCount = 0;
+        String lastUsId = "";
+        String lastTcId = "";
+        String lastObjective = "";
+        String lastPreCondition = "";
+        int firstDataRow = findFirstDataRow(sheet);
+        logger.info("First data row found at index: {}", firstDataRow);
+        for (int rowIndex = firstDataRow; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null)
+                continue;
+            String usId = getCellStringValue(row.getCell(0)); 
+            String tcId = getCellStringValue(row.getCell(1)); 
+            String objective = getCellStringValue(row.getCell(2)); 
+            String preCondition = getCellStringValue(row.getCell(3)); 
+            String stepNoStr = getCellStringValue(row.getCell(4)); 
+            String stepDescription = getCellStringValue(row.getCell(5)); 
+            if (!usId.isEmpty())
+                lastUsId = usId;
+            else
+                usId = lastUsId;
+            if (!tcId.isEmpty())
+                lastTcId = tcId;
+            else
+                tcId = lastTcId;
+            if (!objective.isEmpty())
+                lastObjective = objective;
+            else
+                objective = lastObjective;
+            if (!preCondition.isEmpty())
+                lastPreCondition = preCondition;
+            else
+                preCondition = lastPreCondition;
+            if (isEmptyRow(usId, tcId, stepDescription)) {
+                skippedRowCount++;
+                continue;
+            }
+            if (usId.toLowerCase().contains("note") || tcId.toLowerCase().contains("note") ||
+                    usId.toLowerCase().contains("bug") || tcId.toLowerCase().contains("bug")) {
+                skippedRowCount++;
+                continue;
+            }
+            if ("US ID".equalsIgnoreCase(usId) && "TC ID".equalsIgnoreCase(tcId)) {
+                logger.info("Skipping header row at index: {}", rowIndex);
+                lastUsId = "";
+                lastTcId = "";
+                lastObjective = "";
+                lastPreCondition = "";
+                skippedRowCount++;
+                continue;
+            }
+            logger.info("Processing test case row {}: usId='{}', tcId='{}', stepNo='{}', objective='{}'",
+                    rowIndex + 1, usId, tcId, stepNoStr, objective);
+            String testCaseKey = usId + "-" + tcId;
+            TestCase testCase = testCaseMap.get(testCaseKey);
+            if (testCase == null) {
+                if (usId.isEmpty() || tcId.isEmpty()) {
+                    skippedRowCount++;
+                    continue;
+                }
+                testCase = new TestCase();
+                testCase.setProject(project);
+                testCase.setExcelSheet(excelSheet);
+                testCase.setUserStoryId(normalizeUserStoryId(usId)); 
+                testCase.setTestCaseId(tcId); 
+                testCase.setObjective(objective); 
+                testCase.setPreCondition(preCondition); 
+                testCase.setRowIndex(rowIndex);
+                testCase.setCreatedAt(LocalDateTime.now());
+                testCaseMap.put(testCaseKey, testCase);
+                logger.debug("Created new test case: {}", testCaseKey);
+            }
+            if (!stepDescription.isEmpty()) {
+                TestStep testStep = new TestStep();
+                testStep.setTestCase(testCase);
+                int stepNumber = 1;
+                try {
+                    if (!stepNoStr.isEmpty()) {
+                        stepNumber = Integer.parseInt(stepNoStr);
+                    }
+                } catch (NumberFormatException e) {
+                    logger.debug("Could not parse step number '{}', using default", stepNoStr);
+                }
+                testStep.setStepNumber(stepNumber);
+                testStep.setDescription(stepDescription); 
+                testStep.setTestData(getCellStringValue(row.getCell(6))); 
+                testStep.setExpectedResult(getCellStringValue(row.getCell(7))); 
+                testStep.setActualResult(getCellStringValue(row.getCell(8))); 
+                testStep.setIsHome("Home".equalsIgnoreCase(getCellStringValue(row.getCell(9)))); 
+                testStep.setStatus("pending");
+                testStep.setRowIndex(rowIndex);
+                testStep.setCreatedAt(LocalDateTime.now());
+                testSteps.add(testStep);
+                logger.debug("Added step {} to test case {}: '{}'", stepNumber, testCaseKey, stepDescription);
+            }
+        }
+        if (!testCaseMap.isEmpty()) {
+            List<TestCase> testCases = new ArrayList<>(testCaseMap.values());
+            testCaseRepository.saveAll(testCases);
+            testStepRepository.saveAll(testSteps);
+            String usIds = testCases.stream().map(TestCase::getUserStoryId).distinct().reduce((a, b) -> a + ", " + b)
+                    .orElse("");
+            logger.info("Saved {} test cases (US: {}) with {} total steps from sheet '{}' (skipped {} rows)",
+                    testCases.size(), usIds, testSteps.size(), sheet.getSheetName(), skippedRowCount);
+        } else {
+            logger.warn("No test cases found in sheet: {} (check column A=US ID, B=TC ID, and data rows)",
+                    sheet.getSheetName());
+        }
+    }
+    private String normalizeUserStoryId(String userStoryId) {
+        if (userStoryId == null || userStoryId.trim().isEmpty())
+            return userStoryId;
+        String id = userStoryId.trim();
+        if (id.contains("_"))
+            return id;
+        if (id.matches("US\\d+"))
+            return id.substring(0, 2) + "_" + id.substring(2);
+        return id;
+    }
+    private int findFirstDataRow(Sheet sheet) {
+        for (int rowIndex = 0; rowIndex <= Math.min(10, sheet.getLastRowNum()); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null)
+                continue;
+            String firstCell = getCellStringValue(row.getCell(0));
+            String secondCell = getCellStringValue(row.getCell(1));
+            if (isHeaderRow(firstCell, secondCell)) {
+                continue;
+            }
+            if (!firstCell.isEmpty() || !secondCell.isEmpty()) {
+                logger.debug("First data row detected at index: {}", rowIndex);
+                return rowIndex;
+            }
+        }
+        return 1;
+    }
+    private boolean isHeaderRow(String cell1, String cell2) {
+        if (cell1.isEmpty() && cell2.isEmpty()) {
+            return false;
+        }
+        String combined = (cell1 + " " + cell2).toLowerCase();
+        return combined.contains("user id") ||
+                combined.contains("description") ||
+                combined.equals("us id tc id") ||
+                combined.contains("us id") ||
+                combined.contains("tc id") ||
+                combined.contains("test case") ||
+                combined.contains("objective") ||
+                combined.contains("pre-condition") ||
+                combined.contains("steps") ||
+                combined.contains("expected");
+    }
+    private boolean isEmptyRow(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    private String getCellStringValue(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        try {
+            switch (cell.getCellType()) {
+                case STRING:
+                    return cell.getStringCellValue().trim();
+                case NUMERIC:
+                    if (DateUtil.isCellDateFormatted(cell)) {
+                        return cell.getLocalDateTimeCellValue().toString();
+                    } else {
+                        double numValue = cell.getNumericCellValue();
+                        if (numValue == (long) numValue) {
+                            return String.valueOf((long) numValue);
+                        } else {
+                            return String.valueOf(numValue);
+                        }
+                    }
+                case BOOLEAN:
+                    return String.valueOf(cell.getBooleanCellValue());
+                case FORMULA:
+                    try {
+                        return cell.getStringCellValue().trim();
+                    } catch (IllegalStateException e) {
+                        try {
+                            double numValue = cell.getNumericCellValue();
+                            if (numValue == (long) numValue) {
+                                return String.valueOf((long) numValue);
+                            } else {
+                                return String.valueOf(numValue);
+                            }
+                        } catch (IllegalStateException e2) {
+                            return "";
+                        }
+                    }
+                case BLANK:
+                    return "";
+                default:
+                    return "";
+            }
+        } catch (Exception e) {
+            logger.warn("Error reading cell value: {}", e.getMessage());
+            return "";
+        }
+    }
+}

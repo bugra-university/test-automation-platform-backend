@@ -1,0 +1,18 @@
+package com.vizja.testweb.repository;
+import com.vizja.testweb.model.TestStep;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+@Repository
+public interface TestStepRepository extends JpaRepository<TestStep, Long> {
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM test_steps WHERE test_case_id IN (SELECT id FROM test_cases WHERE project_id = :projectId)", nativeQuery = true)
+    void deleteByProjectId(@Param("projectId") Long projectId);
+    List<TestStep> findByTestCaseIdOrderByStepNumber(Long testCaseId);
+    int countByTestCaseId(Long testCaseId);
+} 
